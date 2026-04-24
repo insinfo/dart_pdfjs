@@ -1,4 +1,4 @@
-# Roteiro de Porte: pdf.js → Dart Nativo
+# Roteiro de Porte: pdf.js → em puro Dart para web usando dart:html ou pacote web
 
 > **Projeto:** pdfjs (Dart)  
 > **Origem:** `referencia/pdf.js-master/src/` (Mozilla pdf.js)  
@@ -9,7 +9,7 @@
 
 ## 📋 Visão Geral
 
-Porte completo da biblioteca **pdf.js** (Mozilla) para **Dart nativo**, usando `dart:typed_data` para manipulação binária e o pacote `web` para interações DOM quando necessário. A estrutura de diretórios em Dart espelha a original JS.
+Porte completo da biblioteca **pdf.js** (Mozilla) para **Dart **, usando `dart:typed_data` para manipulação binária e o pacote `web` ou dart:html para interações DOM quando necessário. A estrutura de diretórios em Dart espelha a original JS.
 
 ---
 
@@ -36,11 +36,11 @@ lib/src/
 | # | Arquivo JS | Arquivo Dart | Status |
 |---|-----------|-------------|--------|
 | 1 | `shared/util.js` | `shared/util.dart` | 🔄 Portar |
-| 2 | `shared/math_clamp.js` | `shared/math_clamp.dart` | 🔄 Portar |
-| 3 | `shared/base_pdf_stream.js` | `shared/base_pdf_stream.dart` | 🔄 Portar |
-| 4 | `shared/image_utils.js` | `shared/image_utils.dart` | 🔄 Portar |
-| 5 | `shared/message_handler.js` | `shared/message_handler.dart` | 🔄 Portar |
-| 6 | `shared/murmurhash3.js` | `shared/murmurhash3.dart` | 🔄 Portar |
+| 2 | `shared/math_clamp.js` | `shared/math_clamp.dart` | ✅ |
+| 3 | `shared/base_pdf_stream.js` | `shared/base_pdf_stream.dart` | ✅ |
+| 4 | `shared/image_utils.js` | `shared/image_utils.dart` | ✅ |
+| 5 | `shared/message_handler.js` | `shared/message_handler.dart` | ✅ (Stubs) |
+| 6 | `shared/murmurhash3.js` | `shared/murmurhash3.dart` | ✅ |
 | 7 | `shared/scripting_utils.js` | `shared/scripting_utils.dart` | ⏳ Diferido |
 | 8 | `shared/obj_bin_transform_utils.js` | `shared/obj_bin_transform_utils.dart` | ⏳ Diferido |
 
@@ -49,11 +49,11 @@ lib/src/
 
 | # | Arquivo JS | Arquivo Dart | Status |
 |---|-----------|-------------|--------|
-| 1 | `core/primitives.js` | `core/primitives.dart` | 🔄 Portar |
-| 2 | `core/base_stream.js` | `core/base_stream.dart` | 🔄 Portar |
-| 3 | `core/stream.js` | `core/stream.dart` | 🔄 Portar |
-| 4 | `core/decode_stream.js` | `core/decode_stream.dart` | 🔄 Portar |
-| 5 | `core/core_utils.js` | `core/core_utils.dart` | 🔄 Portar |
+| 1 | `core/primitives.js` | `core/primitives.dart` | ✅ |
+| 2 | `core/base_stream.js` | `core/base_stream.dart` | ✅ |
+| 3 | `core/stream.js` | `core/stream.dart` | ✅ |
+| 4 | `core/decode_stream.js` | `core/decode_stream.dart` | ✅ |
+| 5 | `core/core_utils.js` | `core/core_utils.dart` | 🔄 Stubs |
 | 6 | `core/parser.js` | `core/parser.dart` | 🔄 Portar |
 | 7 | `core/xref.js` | `core/xref.dart` | 🔄 Portar |
 
@@ -68,15 +68,15 @@ lib/src/
 | 4 | `core/lzw_stream.js` | `core/lzw_stream.dart` | ✅ |
 | 5 | `core/run_length_stream.js` | `core/run_length_stream.dart` | ✅ |
 | 6 | `core/predictor_stream.js` | `core/predictor_stream.dart` | ✅ |
-| 7 | `core/ccitt_stream.js` | `core/ccitt_stream.dart` | 🔄 |
-| 8 | `core/ccitt.js` | `core/ccitt.dart` | 🔄 |
-| 9 | `core/jbig2_stream.js` | `core/jbig2_stream.dart` | 🔄 |
-| 10 | `core/jbig2.js` | `core/jbig2.dart` | 🔄 |
-| 11 | `core/jpeg_stream.js` | `core/jpeg_stream.dart` | 🔄 |
-| 12 | `core/jpg.js` | `core/jpg.dart` | 🔄 |
-| 13 | `core/jpx_stream.js` | `core/jpx_stream.dart` | 🔄 |
-| 14 | `core/jpx.js` | `core/jpx.dart` | 🔄 |
-| 15 | `core/brotli_stream.js` | `core/brotli_stream.dart` | 🔄 |
+| 7 | `core/ccitt_stream.js` | `core/ccitt_stream.dart` | ✅ |
+| 8 | `core/ccitt.js` | `core/ccitt.dart` | ✅ |
+| 9 | `core/jbig2_stream.js` | `core/jbig2_stream.dart` | ✅ |
+| 10 | `core/jbig2.js` | `core/jbig2.dart` | 🔄 Stubs |
+| 11 | `core/jpeg_stream.js` | `core/jpeg_stream.dart` | ✅ |
+| 12 | `core/jpg.js` | `core/jpg.dart` | 🔄 Stubs |
+| 13 | `core/jpx_stream.js` | `core/jpx_stream.dart` | ✅ |
+| 14 | `core/jpx.js` | `core/jpx.dart` | 🔄 Stubs |
+| 15 | `core/brotli_stream.js` | `core/brotli_stream.dart` | ✅ (Stubs) |
 | 16 | `core/decrypt_stream.js` | `core/decrypt_stream.dart` | ✅ |
 
 ### Fase 4 — Core Criptografia & Hashing
@@ -85,32 +85,32 @@ lib/src/
 |---|-----------|-------------|--------|
 | 1 | `core/crypto.js` | `core/crypto.dart` | ✅ |
 | 2 | `core/calculate_md5.js` | `core/calculate_md5.dart` | ✅ |
-| 3 | `core/calculate_sha256.js` | `core/calculate_sha256.dart` | 🔄 Stubs |
-| 4 | `core/calculate_sha_other.js` | `core/calculate_sha_other.dart` | 🔄 Stubs |
+| 3 | `core/calculate_sha256.js` | `core/calculate_sha256.dart` | ✅ |
+| 4 | `core/calculate_sha_other.js` | `core/calculate_sha_other.dart` | ✅ |
 | 5 | `core/arithmetic_decoder.js` | `core/arithmetic_decoder.dart` | ✅ |
 
 ### Fase 5 — Core Fontes
 
 | # | Arquivo JS | Arquivo Dart | Complexidade |
 |---|-----------|-------------|-------------|
-| 1 | `core/encodings.js` | `core/encodings.dart` | 🟢 |
-| 2 | `core/fonts_utils.js` | `core/fonts_utils.dart` | 🟡 |
+| 1 | `core/encodings.js` | `core/encodings.dart` | ✅ |
+| 2 | `core/fonts_utils.js` | `core/fonts_utils.dart` | ✅ |
 | 3 | `core/fonts.js` | `core/fonts.dart` | 🔴 (122KB) |
-| 4 | `core/cff_parser.js` | `core/cff_parser.dart` | 🔴 (60KB) |
+| 4 | `core/cff_parser.js` | `core/cff_parser.dart` | 🔄 Stubs |
 | 5 | `core/cff_font.js` | `core/cff_font.dart` | 🟡 |
 | 6 | `core/type1_font.js` | `core/type1_font.dart` | 🟡 |
 | 7 | `core/type1_parser.js` | `core/type1_parser.dart` | 🟡 |
 | 8 | `core/font_renderer.js` | `core/font_renderer.dart` | 🟡 |
 | 9 | `core/font_substitutions.js` | `core/font_substitutions.dart` | 🟡 |
 | 10 | `core/glyf.js` | `core/glyf.dart` | 🟡 |
-| 11 | `core/glyphlist.js` | `core/glyphlist.dart` | 🟢 (dados) |
-| 12 | `core/charsets.js` | `core/charsets.dart` | 🟢 (dados) |
-| 13 | `core/standard_fonts.js` | `core/standard_fonts.dart` | 🟢 (dados) |
-| 14 | `core/metrics.js` | `core/metrics.dart` | 🟢 (dados) |
-| 15 | `core/unicode.js` | `core/unicode.dart` | 🟢 (dados) |
-| 16 | `core/cmap.js` | `core/cmap.dart` | 🟡 |
-| 17 | `core/binary_cmap.js` | `core/binary_cmap.dart` | 🟡 |
-| 18 | `core/to_unicode_map.js` | `core/to_unicode_map.dart` | 🟡 |
+| 11 | `core/glyphlist.js` | `core/glyphlist.dart` | ✅ |
+| 12 | `core/charsets.js` | `core/charsets.dart` | ✅ |
+| 13 | `core/standard_fonts.js` | `core/standard_fonts.dart` | ✅ |
+| 14 | `core/metrics.js` | `core/metrics.dart` | ✅ |
+| 15 | `core/unicode.js` | `core/unicode.dart` | ✅ |
+| 16 | `core/cmap.js` | `core/cmap.dart` | ✅ |
+| 17 | `core/binary_cmap.js` | `core/binary_cmap.dart` | ✅ |
+| 18 | `core/to_unicode_map.js` | `core/to_unicode_map.dart` | ✅ |
 | 19 | `core/opentype_file_builder.js` | `core/opentype_file_builder.dart` | 🟡 |
 | 20-24 | `core/*_factors.js`, `core/liberationsans_widths.js` | `core/*_factors.dart` | 🟢 (dados) |
 

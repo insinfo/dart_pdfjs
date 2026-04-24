@@ -57,10 +57,10 @@ Uint8List calculateMD5(Uint8List data, int offset, int length) {
 
   for (i = 0; i < paddedLength;) {
     for (j = 0; j < 16; ++j, i += 4) {
-      w[j] = padded[i] |
+      w[j] = (padded[i] |
           (padded[i + 1] << 8) |
           (padded[i + 2] << 16) |
-          (padded[i + 3] << 24);
+          (padded[i + 3] << 24)).toSigned(32);
     }
     int a = h0, b = h1, c = h2, d = h3, f = 0, g = 0;
     for (j = 0; j < 64; ++j) {
@@ -77,24 +77,21 @@ Uint8List calculateMD5(Uint8List data, int offset, int length) {
         f = c ^ (b | ~d);
         g = (7 * j) & 15;
       }
+      
       final int tmp = d;
-      final int rotateArg = (a + f + k[j] + w[g]) & 0xffffffff;
-      // Precisamos tratar rotateArg como um int de 32bits no shift logico da direita pra garantir o mesmo bit a bit
-      // Dart trata int como 64-bit e o JS bitwise op atua em 32-bits (>>> atua unsigned)
-      final int rotateArgSigned = rotateArg > 0x7fffffff ? rotateArg - 0x100000000 : rotateArg;
+      final int rotateArg = (a + f + k[j] + w[g]).toSigned(32);
       final int rotate = r[j];
       d = c;
       c = b;
-
-      final int shiftedRight = (rotateArgSigned >>> (32 - rotate)) & 0xffffffff;
-      b = (b + ((rotateArg << rotate) | shiftedRight)) & 0xffffffff;
-      b = b > 0x7fffffff ? b - 0x100000000 : b;
+      
+      final int shiftedRight = (rotateArg.toUnsigned(32) >>> (32 - rotate)).toSigned(32);
+      b = (b + ((rotateArg << rotate) | shiftedRight)).toSigned(32);
       a = tmp;
     }
-    h0 = (h0 + a) & 0xffffffff; h0 = h0 > 0x7fffffff ? h0 - 0x100000000 : h0;
-    h1 = (h1 + b) & 0xffffffff; h1 = h1 > 0x7fffffff ? h1 - 0x100000000 : h1;
-    h2 = (h2 + c) & 0xffffffff; h2 = h2 > 0x7fffffff ? h2 - 0x100000000 : h2;
-    h3 = (h3 + d) & 0xffffffff; h3 = h3 > 0x7fffffff ? h3 - 0x100000000 : h3;
+    h0 = (h0 + a).toSigned(32);
+    h1 = (h1 + b).toSigned(32);
+    h2 = (h2 + c).toSigned(32);
+    h3 = (h3 + d).toSigned(32);
   }
 
   // dart format off

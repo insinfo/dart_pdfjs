@@ -1,58 +1,40 @@
-// Copyright 2012 Mozilla Foundation (original JS)
+// Copyright 2012 Mozilla Foundation
 // Ported to Dart, 2026. Apache License 2.0.
 
-
-
-// Sentinelas (equivalentes a Symbol() do JS)
 final Object circularRef = Object();
 final Object eof = Object();
 
-// --- Caches ---
-Map<String, Cmd> _cmdCache = {};
-Map<String, Name> _nameCache = {};
-Map<String, Ref> _refCache = {};
+final Map<String, Cmd> _cmdCache = {};
+final Map<String, Name> _nameCache = {};
+final Map<String, Ref> _refCache = {};
 
 void clearPrimitiveCaches() {
-  _cmdCache = {};
-  _nameCache = {};
-  _refCache = {};
+  _cmdCache.clear();
+  _nameCache.clear();
+  _refCache.clear();
 }
-
-// --- Name ---
 
 class Name {
   final String name;
+  const Name._(this.name);
 
-  Name._(this.name);
-
-  static Name get(String name) {
+  factory Name.get(String name) {
     return _nameCache.putIfAbsent(name, () => Name._(name));
   }
-
-  @override
-  String toString() => 'Name($name)';
 }
-
-// --- Cmd ---
 
 class Cmd {
   final String cmd;
+  const Cmd._(this.cmd);
 
-  Cmd._(this.cmd);
-
-  static Cmd get(String cmd) {
+  factory Cmd.get(String cmd) {
     return _cmdCache.putIfAbsent(cmd, () => Cmd._(cmd));
   }
-
-  @override
-  String toString() => 'Cmd($cmd)';
 }
-
-// --- Dict ---
 
 class Dict {
   final Map<String, dynamic> _map = {};
-  String? objId;
+  dynamic objId;
   bool suppressEncryption = false;
   dynamic xref;
 
@@ -80,22 +62,19 @@ class Dict {
     return value;
   }
 
-  /// Automatically dereferences Ref objects.
   dynamic get(String key1, [String? key2, String? key3]) {
     return _getValue(false, key1, key2, key3);
   }
 
-  /// Same as get(), but returns a Future.
   Future<dynamic> getAsync(String key1, [String? key2, String? key3]) async {
     return _getValue(true, key1, key2, key3);
   }
 
-  /// Same as get(), but dereferences all elements if the result is an Array.
   dynamic getArray(String key1, [String? key2, String? key3]) {
     dynamic value = _getValue(false, key1, key2, key3);
     if (value is List) {
-      value = List.from(value);
-      for (int i = 0; i < value.length; i++) {
+      value = List<dynamic>.from(value);
+      for (int i = 0, ii = value.length; i < ii; i++) {
         if (value[i] is Ref && xref != null) {
           value[i] = xref.fetch(value[i], suppressEncryption);
         }
@@ -104,33 +83,52 @@ class Dict {
     return value;
   }
 
-  /// No dereferencing.
-  dynamic getRaw(String key) => _map[key];
+  dynamic getRaw(String key) {
+    return _map[key];
+  }
 
-  Iterable<String> getKeys() => _map.keys;
+  Iterable<String> getKeys() {
+    return _map.keys;
+  }
 
-  Iterable<dynamic> getRawValues() => _map.values;
+  Iterable<dynamic> getRawValues() {
+    return _map.values;
+  }
 
-  Iterable<MapEntry<String, dynamic>> getRawEntries() => _map.entries;
+  Iterable<MapEntry<String, dynamic>> getRawEntries() {
+    return _map.entries;
+  }
 
   void set(String key, dynamic value) {
+    if (value == null) {
+      throw ArgumentError('Dict.set: The "value" cannot be null.');
+    }
     _map[key] = value;
   }
 
   void setIfNotExists(String key, dynamic value) {
-    if (!has(key)) set(key, value);
+    if (!has(key)) {
+      set(key, value);
+    }
   }
 
   void setIfNumber(String key, dynamic value) {
-    if (value is num) set(key, value);
+    if (value is num) {
+      set(key, value);
+    }
   }
 
   void setIfArray(String key, dynamic value) {
-    if (value is List) set(key, value);
+    // ArrayBuffer isView equivalent handles by typed data lists being Lists
+    if (value is List) {
+      set(key, value);
+    }
   }
 
   void setIfDefined(String key, dynamic value) {
-    if (value != null) set(key, value);
+    if (value != null) {
+      set(key, value);
+    }
   }
 
   void setIfName(String key, dynamic value) {
@@ -142,38 +140,32 @@ class Dict {
   }
 
   void setIfDict(String key, dynamic value) {
-    if (value is Dict) set(key, value);
-  }
-
-  bool has(String key) => _map.containsKey(key);
-
-  /// Iterator that dereferences Ref values.
-  Iterable<MapEntry<String, dynamic>> get entries sync* {
-    for (final entry in _map.entries) {
-      final value = entry.value;
-      yield MapEntry(
-        entry.key,
-        value is Ref && xref != null
-            ? xref.fetch(value, suppressEncryption)
-            : value,
-      );
+    if (value is Dict) {
+      set(key, value);
     }
   }
 
-  static final Dict _empty = _createEmpty();
-
-  static Dict _createEmpty() {
-    final d = Dict(null);
-    return d;
+  bool has(String key) {
+    return _map.containsKey(key);
   }
 
-  static Dict get empty => _empty;
+  Iterable<List<dynamic>> get iterable sync* {
+    for (final entry in _map.entries) {
+      yield [
+        entry.key,
+        (entry.value is Ref && xref != null)
+            ? xref.fetch(entry.value, suppressEncryption)
+            : entry.value
+      ];
+    }
+  }
 
-  static Dict merge({
-    required dynamic xref,
-    required List<dynamic> dictArray,
-    bool mergeSubDicts = false,
-  }) {
+  static final Dict empty = _EmptyDict();
+
+  static Dict merge(
+      {required dynamic xref,
+      required List<dynamic> dictArray,
+      bool mergeSubDicts = false}) {
     final mergedDict = Dict(xref);
     final properties = <String, List<dynamic>>{};
 
@@ -184,7 +176,7 @@ class Dict {
         final value = entry.value;
         var property = properties[key];
         if (property == null) {
-          property = [];
+          property = <dynamic>[];
           properties[key] = property;
         } else if (!mergeSubDicts || value is! Dict) {
           continue;
@@ -192,7 +184,6 @@ class Dict {
         property.add(value);
       }
     }
-
     for (final entry in properties.entries) {
       final name = entry.key;
       final values = entry.value;
@@ -202,17 +193,15 @@ class Dict {
       }
       final subDict = Dict(xref);
       for (final dict in values) {
-        if (dict is Dict) {
-          for (final e in dict.getRawEntries()) {
-            subDict.setIfNotExists(e.key, e.value);
-          }
+        for (final subEntry in (dict as Dict).getRawEntries()) {
+          subDict.setIfNotExists(subEntry.key, subEntry.value);
         }
       }
       if (subDict.size > 0) {
         mergedDict.set(name, subDict);
       }
     }
-
+    properties.clear();
     return mergedDict.size > 0 ? mergedDict : Dict.empty;
   }
 
@@ -229,92 +218,109 @@ class Dict {
   }
 }
 
-// --- Ref ---
+class _EmptyDict extends Dict {
+  _EmptyDict() : super(null);
+
+  @override
+  void set(String key, dynamic value) {
+    throw UnsupportedError("Should not call `set` on the empty dictionary.");
+  }
+}
 
 class Ref {
   final int num;
   final int gen;
-
-  Ref(this.num, this.gen);
+  const Ref._(this.num, this.gen);
 
   @override
   String toString() {
-    if (gen == 0) return '${num}R';
-    return '${num}R$gen';
+    if (gen == 0) {
+      return "\${num}R";
+    }
+    return "\${num}R\$gen";
   }
 
   static Ref? fromString(String str) {
-    final ref = _refCache[str];
-    if (ref != null) return ref;
+    final cached = _refCache[str];
+    if (cached != null) return cached;
     final m = RegExp(r'^(\d+)R(\d*)$').firstMatch(str);
-    if (m == null || m.group(1) == '0') return null;
-    final r = Ref(
-      int.parse(m.group(1)!),
-      m.group(2)!.isEmpty ? 0 : int.parse(m.group(2)!),
-    );
-    _refCache[str] = r;
-    return r;
+    if (m == null || m.group(1) == "0") return null;
+    final numStr = m.group(1)!;
+    final genStr = m.group(2);
+    final ref = Ref._(int.parse(numStr), (genStr == null || genStr.isEmpty) ? 0 : int.parse(genStr));
+    _refCache[str] = ref;
+    return ref;
   }
 
-  static Ref get(int num, int gen) {
-    final key = gen == 0 ? '${num}R' : '${num}R$gen';
-    return _refCache.putIfAbsent(key, () => Ref(num, gen));
+  factory Ref.get(int num, int gen) {
+    final key = gen == 0 ? "\${num}R" : "\${num}R\$gen";
+    return _refCache.putIfAbsent(key, () => Ref._(num, gen));
   }
 }
-
-// --- RefSet ---
 
 class RefSet {
   final Set<String> _set;
 
-  RefSet([RefSet? parent]) : _set = parent != null ? Set.from(parent._set) : {};
+  RefSet([RefSet? parent]) : _set = parent != null ? Set<String>.from(parent._set) : <String>{};
 
-  bool has(dynamic ref) => _set.contains(ref.toString());
+  bool has(dynamic ref) {
+    return _set.contains(ref.toString());
+  }
 
-  void put(dynamic ref) => _set.add(ref.toString());
+  void put(dynamic ref) {
+    _set.add(ref.toString());
+  }
 
-  void remove(dynamic ref) => _set.remove(ref.toString());
+  void remove(dynamic ref) {
+    _set.remove(ref.toString());
+  }
 
-  Iterator<String> get iterator => _set.iterator;
+  Iterable<String> get iterable => _set;
 
-  void clear() => _set.clear();
+  void clear() {
+    _set.clear();
+  }
 }
-
-// --- RefSetCache ---
 
 class RefSetCache {
   final Map<String, dynamic> _map = {};
 
   int get size => _map.length;
 
-  dynamic get(Ref ref) => _map[ref.toString()];
+  dynamic get(dynamic ref) {
+    return _map[ref.toString()];
+  }
 
-  bool has(Ref ref) => _map.containsKey(ref.toString());
+  bool has(dynamic ref) {
+    return _map.containsKey(ref.toString());
+  }
 
-  void put(Ref ref, dynamic obj) => _map[ref.toString()] = obj;
+  void put(dynamic ref, dynamic obj) {
+    _map[ref.toString()] = obj;
+  }
 
-  void putAlias(Ref ref, Ref aliasRef) {
+  void putAlias(dynamic ref, dynamic aliasRef) {
     _map[ref.toString()] = get(aliasRef);
   }
 
   Iterable<dynamic> get values => _map.values;
 
-  Iterable<MapEntry<Ref?, dynamic>> get items sync* {
+  Iterable<List<dynamic>> get items sync* {
     for (final entry in _map.entries) {
-      yield MapEntry(Ref.fromString(entry.key), entry.value);
+      yield [Ref.fromString(entry.key), entry.value];
     }
   }
 
   Iterable<Ref?> get keys sync* {
-    for (final key in _map.keys) {
-      yield Ref.fromString(key);
+    for (final ref in _map.keys) {
+      yield Ref.fromString(ref);
     }
   }
 
-  void clear() => _map.clear();
+  void clear() {
+    _map.clear();
+  }
 }
-
-// --- Helper functions ---
 
 bool isName(dynamic v, [String? name]) {
   return v is Name && (name == null || v.name == name);
@@ -325,9 +331,10 @@ bool isCmd(dynamic v, [String? cmd]) {
 }
 
 bool isDict(dynamic v, [String? type]) {
-  return v is Dict && (type == null || isName(v.get('Type'), type));
+  return v is Dict && (type == null || isName(v.get("Type"), type));
 }
 
-bool isRefsEqual(Ref v1, Ref v2) {
+bool isRefsEqual(dynamic v1, dynamic v2) {
+  if (v1 is! Ref || v2 is! Ref) return false;
   return v1.num == v2.num && v1.gen == v2.gen;
 }

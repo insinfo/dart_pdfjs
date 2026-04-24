@@ -189,7 +189,7 @@ abstract class AESBaseCipher {
     if (_aesMixCol[1] == 0) _initMixCol();
   }
 
-  Uint8List _expandKey(Uint8List cipherKey);
+
 
   Uint8List _decrypt(Uint8List input, Uint8List key) {
     int t, u, v;
@@ -504,7 +504,6 @@ class AES128Cipher extends AESBaseCipher {
     _key = _expandKey(key);
   }
 
-  @override
   Uint8List _expandKey(Uint8List cipherKey) {
     const b = 176;
     final s = _aesS;
@@ -545,7 +544,6 @@ class AES256Cipher extends AESBaseCipher {
     _key = _expandKey(key);
   }
 
-  @override
   Uint8List _expandKey(Uint8List cipherKey) {
     const b = 240;
     final s = _aesS;
@@ -705,7 +703,7 @@ class CipherTransform {
 
       final iv = Uint8List(16);
       // Math.random -> secure replacement is skipped here for brevity unless asked
-      // crypto.getRandomValues(iv); // we could use dart:math Random.secure()
+      // TODO crypto.getRandomValues(iv); // we could use dart:math Random.secure()
       
       Uint8List data = stringToBytes(s);
       data = cipher.encrypt(data, iv);
