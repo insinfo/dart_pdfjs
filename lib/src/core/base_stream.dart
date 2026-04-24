@@ -7,6 +7,8 @@ import '../shared/util.dart';
 /// Classe base abstrata para todos os streams de PDF.
 abstract class BaseStream {
   late int pos;
+  dynamic dict;
+  int get end => length;
 
   int get length => unreachable('Abstract getter `length` accessed');
 

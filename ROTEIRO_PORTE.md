@@ -54,8 +54,8 @@ lib/src/
 | 3 | `core/stream.js` | `core/stream.dart` | ✅ |
 | 4 | `core/decode_stream.js` | `core/decode_stream.dart` | ✅ |
 | 5 | `core/core_utils.js` | `core/core_utils.dart` | 🔄 Stubs |
-| 6 | `core/parser.js` | `core/parser.dart` | 🔄 Portar |
-| 7 | `core/xref.js` | `core/xref.dart` | 🔄 Portar |
+| 6 | `core/parser.js` | `core/parser.dart` | ✅ |
+| 7 | `core/xref.js` | `core/xref.dart` | ✅ |
 
 ### Fase 3 — Core Streams (filtros de compressão)
 > Decodificadores de streams do PDF.
@@ -96,10 +96,10 @@ lib/src/
 | 1 | `core/encodings.js` | `core/encodings.dart` | ✅ |
 | 2 | `core/fonts_utils.js` | `core/fonts_utils.dart` | ✅ |
 | 3 | `core/fonts.js` | `core/fonts.dart` | 🔴 (122KB) |
-| 4 | `core/cff_parser.js` | `core/cff_parser.dart` | 🔄 Stubs |
-| 5 | `core/cff_font.js` | `core/cff_font.dart` | 🟡 |
-| 6 | `core/type1_font.js` | `core/type1_font.dart` | 🟡 |
-| 7 | `core/type1_parser.js` | `core/type1_parser.dart` | 🟡 |
+| 4 | `core/cff_parser.js` | `core/cff_parser.dart` | ✅ |
+| 5 | `core/cff_font.js` | `core/cff_font.dart` | ✅ |
+| 6 | `core/type1_font.js` | `core/type1_font.dart` | ✅ |
+| 7 | `core/type1_parser.js` | `core/type1_parser.dart` | ✅ |
 | 8 | `core/font_renderer.js` | `core/font_renderer.dart` | 🟡 |
 | 9 | `core/font_substitutions.js` | `core/font_substitutions.dart` | 🟡 |
 | 10 | `core/glyf.js` | `core/glyf.dart` | 🟡 |
