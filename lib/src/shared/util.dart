@@ -430,6 +430,60 @@ String stringToUTF8String(String str) {
   return utf8.decode(str.codeUnits);
 }
 
+T shadow<T>(Object obj, String prop, T value, [bool nonSerializable = false]) {
+  return value;
+}
+
+bool _isValidProtocol(Uri uri) {
+  switch (uri.scheme.toLowerCase()) {
+    case 'http':
+    case 'https':
+    case 'ftp':
+    case 'mailto':
+    case 'tel':
+      return true;
+  }
+  return false;
+}
+
+Uri? createValidAbsoluteUrl(
+  String? url, [
+  String? baseUrl,
+  bool addDefaultProtocol = false,
+  bool tryConvertEncoding = false,
+]) {
+  if (url == null || url.isEmpty) {
+    return null;
+  }
+  var currentUrl = url;
+  if (addDefaultProtocol && currentUrl.startsWith('www.')) {
+    final dotCount = '.'.allMatches(currentUrl).length;
+    if (dotCount >= 2) {
+      currentUrl = 'http://$currentUrl';
+    }
+  }
+  if (tryConvertEncoding) {
+    try {
+      currentUrl = stringToUTF8String(currentUrl);
+    } catch (_) {}
+  }
+
+  final Uri? absoluteUrl;
+  try {
+    if (baseUrl != null && baseUrl.isNotEmpty) {
+      absoluteUrl = Uri.parse(baseUrl).resolve(currentUrl);
+    } else {
+      absoluteUrl = Uri.parse(currentUrl);
+    }
+  } catch (_) {
+    return null;
+  }
+  if (!absoluteUrl.hasScheme || !_isValidProtocol(absoluteUrl)) {
+    return null;
+  }
+  return absoluteUrl;
+}
+
 int objectSize(Map<String, dynamic> obj) => obj.length;
 
 bool isLittleEndian() {
@@ -669,6 +723,194 @@ String getModificationDate([DateTime? date]) {
 String stripPath(String str) {
   final idx = str.lastIndexOf('/');
   return idx >= 0 ? str.substring(idx + 1) : str;
+}
+
+const Map<int, int> _pdfStringTranslateTable = {
+  0x18: 0x02d8,
+  0x19: 0x02c7,
+  0x1a: 0x02c6,
+  0x1b: 0x02d9,
+  0x1c: 0x02dd,
+  0x1d: 0x02db,
+  0x1e: 0x02da,
+  0x1f: 0x02dc,
+  0x80: 0x2022,
+  0x81: 0x2020,
+  0x82: 0x2021,
+  0x83: 0x2026,
+  0x84: 0x2014,
+  0x85: 0x2013,
+  0x86: 0x0192,
+  0x87: 0x2044,
+  0x88: 0x2039,
+  0x89: 0x203a,
+  0x8a: 0x2212,
+  0x8b: 0x2030,
+  0x8c: 0x201e,
+  0x8d: 0x201c,
+  0x8e: 0x201d,
+  0x8f: 0x2018,
+  0x90: 0x2019,
+  0x91: 0x201a,
+  0x92: 0x2122,
+  0x93: 0xfb01,
+  0x94: 0xfb02,
+  0x95: 0x0141,
+  0x96: 0x0152,
+  0x97: 0x0160,
+  0x98: 0x0178,
+  0x99: 0x017d,
+  0x9a: 0x0131,
+  0x9b: 0x0142,
+  0x9c: 0x0153,
+  0x9d: 0x0161,
+  0x9e: 0x017e,
+  0xa0: 0x20ac,
+};
+
+String _stripLanguageCodes(String str) {
+  return str.replaceAll(RegExp(r'\x1b[^\x1b]*(?:\x1b|$)'), '');
+}
+
+String stringToPDFString(String str, {bool keepEscapeSequence = false}) {
+  if (str.isEmpty) {
+    return str;
+  }
+
+  final first = str.codeUnitAt(0);
+  if (first >= 0xef) {
+    Encoding? encoding;
+    var bytes = stringToBytes(str);
+    if (bytes.length >= 2 && bytes[0] == 0xfe && bytes[1] == 0xff) {
+      if (bytes.length.isOdd) {
+        bytes = Uint8List.sublistView(bytes, 0, bytes.length - 1);
+      }
+      encoding = const _Utf16Encoding(bigEndian: true);
+    } else if (bytes.length >= 2 && bytes[0] == 0xff && bytes[1] == 0xfe) {
+      if (bytes.length.isOdd) {
+        bytes = Uint8List.sublistView(bytes, 0, bytes.length - 1);
+      }
+      encoding = const _Utf16Encoding(bigEndian: false);
+    } else if (bytes.length >= 3 &&
+        bytes[0] == 0xef &&
+        bytes[1] == 0xbb &&
+        bytes[2] == 0xbf) {
+      encoding = utf8;
+    }
+
+    if (encoding != null) {
+      try {
+        final decoded = encoding.decode(bytes);
+        return keepEscapeSequence ? decoded : _stripLanguageCodes(decoded);
+      } catch (ex) {
+        warn('stringToPDFString: "$ex".');
+      }
+    }
+  }
+
+  final buffer = StringBuffer();
+  for (var i = 0; i < str.length; i++) {
+    final charCode = str.codeUnitAt(i);
+    if (!keepEscapeSequence && charCode == 0x1b) {
+      while (++i < str.length && str.codeUnitAt(i) != 0x1b) {}
+      continue;
+    }
+    buffer.writeCharCode(_pdfStringTranslateTable[charCode] ?? charCode);
+  }
+  return buffer.toString();
+}
+
+class _Utf16Encoding extends Encoding {
+  const _Utf16Encoding({required this.bigEndian});
+
+  final bool bigEndian;
+
+  @override
+  Converter<List<int>, String> get decoder => _Utf16Decoder(bigEndian);
+
+  @override
+  Converter<String, List<int>> get encoder =>
+      throw UnsupportedError('UTF-16 encoding is not implemented.');
+
+  @override
+  String get name => bigEndian ? 'utf-16be' : 'utf-16le';
+}
+
+class _Utf16Decoder extends Converter<List<int>, String> {
+  const _Utf16Decoder(this.bigEndian);
+
+  final bool bigEndian;
+
+  @override
+  String convert(List<int> input) {
+    final start = input.length >= 2 &&
+            ((input[0] == 0xfe && input[1] == 0xff) ||
+                (input[0] == 0xff && input[1] == 0xfe))
+        ? 2
+        : 0;
+    final codes = <int>[];
+    for (var i = start; i + 1 < input.length; i += 2) {
+      codes.add(bigEndian
+          ? (input[i] << 8) | input[i + 1]
+          : input[i] | (input[i + 1] << 8));
+    }
+    return String.fromCharCodes(codes);
+  }
+}
+
+bool isValidExplicitDest(
+  dynamic dest,
+  bool Function(dynamic) validRef,
+  bool Function(dynamic) validName,
+) {
+  if (dest is! List || dest.length < 2) {
+    return false;
+  }
+  final page = dest[0];
+  final zoom = dest[1];
+  if (!validRef(page) && page is! int) {
+    return false;
+  }
+  if (!validName(zoom)) {
+    return false;
+  }
+
+  final args = dest.sublist(2);
+  var allowNull = true;
+  final zoomName = (zoom as dynamic).name;
+  switch (zoomName) {
+    case 'XYZ':
+      if (args.length < 2 || args.length > 3) {
+        return false;
+      }
+      break;
+    case 'Fit':
+    case 'FitB':
+      return args.isEmpty;
+    case 'FitH':
+    case 'FitBH':
+    case 'FitV':
+    case 'FitBV':
+      if (args.length > 1) {
+        return false;
+      }
+      break;
+    case 'FitR':
+      if (args.length != 4) {
+        return false;
+      }
+      allowNull = false;
+      break;
+    default:
+      return false;
+  }
+  for (final arg in args) {
+    if (arg is num || (allowNull && arg == null)) {
+      continue;
+    }
+    return false;
+  }
+  return true;
 }
 
 const String annotationPrefix = 'pdfjs_internal_id_';

@@ -235,9 +235,9 @@ class Ref {
   @override
   String toString() {
     if (gen == 0) {
-      return "\${num}R";
+      return "${num}R";
     }
-    return "\${num}R\$gen";
+    return "${num}R$gen";
   }
 
   static Ref? fromString(String str) {
@@ -247,13 +247,14 @@ class Ref {
     if (m == null || m.group(1) == "0") return null;
     final numStr = m.group(1)!;
     final genStr = m.group(2);
-    final ref = Ref._(int.parse(numStr), (genStr == null || genStr.isEmpty) ? 0 : int.parse(genStr));
+    final ref = Ref._(int.parse(numStr),
+        (genStr == null || genStr.isEmpty) ? 0 : int.parse(genStr));
     _refCache[str] = ref;
     return ref;
   }
 
   factory Ref.get(int num, int gen) {
-    final key = gen == 0 ? "\${num}R" : "\${num}R\$gen";
+    final key = gen == 0 ? "${num}R" : "${num}R$gen";
     return _refCache.putIfAbsent(key, () => Ref._(num, gen));
   }
 }
@@ -261,7 +262,8 @@ class Ref {
 class RefSet {
   final Set<String> _set;
 
-  RefSet([RefSet? parent]) : _set = parent != null ? Set<String>.from(parent._set) : <String>{};
+  RefSet([RefSet? parent])
+      : _set = parent != null ? Set<String>.from(parent._set) : <String>{};
 
   bool has(dynamic ref) {
     return _set.contains(ref.toString());
