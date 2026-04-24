@@ -1,16 +1,24 @@
 // Copyright 2012 Mozilla Foundation (original JS)
 // Ported to Dart, 2026. Apache License 2.0.
 
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:math' as math;
 
 // --- Constants ---
 
-const List<double> bboxInit = [double.infinity, double.infinity, double.negativeInfinity, double.negativeInfinity];
+const List<double> bboxInit = [
+  double.infinity,
+  double.infinity,
+  double.negativeInfinity,
+  double.negativeInfinity
+];
 
 final Float32List f32BboxInit = Float32List.fromList([
-  double.infinity, double.infinity,
-  double.negativeInfinity, double.negativeInfinity,
+  double.infinity,
+  double.infinity,
+  double.negativeInfinity,
+  double.negativeInfinity,
 ]);
 
 const List<double> fontIdentityMatrix = [0.001, 0, 0, 0.001, 0, 0];
@@ -184,22 +192,33 @@ abstract class AnnotationBorderStyleType {
 }
 
 const Map<String, String> annotationActionEventType = {
-  'E': 'Mouse Enter', 'X': 'Mouse Exit',
-  'D': 'Mouse Down', 'U': 'Mouse Up',
-  'Fo': 'Focus', 'Bl': 'Blur',
-  'PO': 'PageOpen', 'PC': 'PageClose',
-  'PV': 'PageVisible', 'PI': 'PageInvisible',
-  'K': 'Keystroke', 'F': 'Format',
-  'V': 'Validate', 'C': 'Calculate',
+  'E': 'Mouse Enter',
+  'X': 'Mouse Exit',
+  'D': 'Mouse Down',
+  'U': 'Mouse Up',
+  'Fo': 'Focus',
+  'Bl': 'Blur',
+  'PO': 'PageOpen',
+  'PC': 'PageClose',
+  'PV': 'PageVisible',
+  'PI': 'PageInvisible',
+  'K': 'Keystroke',
+  'F': 'Format',
+  'V': 'Validate',
+  'C': 'Calculate',
 };
 
 const Map<String, String> documentActionEventType = {
-  'WC': 'WillClose', 'WS': 'WillSave', 'DS': 'DidSave',
-  'WP': 'WillPrint', 'DP': 'DidPrint',
+  'WC': 'WillClose',
+  'WS': 'WillSave',
+  'DS': 'DidSave',
+  'WP': 'WillPrint',
+  'DP': 'DidPrint',
 };
 
 const Map<String, String> pageActionEventType = {
-  'O': 'PageOpen', 'C': 'PageClose',
+  'O': 'PageOpen',
+  'C': 'PageClose',
 };
 
 abstract class VerbosityLevel {
@@ -407,6 +426,10 @@ Uint8List stringToBytes(String str) {
   return bytes;
 }
 
+String stringToUTF8String(String str) {
+  return utf8.decode(str.codeUnits);
+}
+
 int objectSize(Map<String, dynamic> obj) => obj.length;
 
 bool isLittleEndian() {
@@ -436,25 +459,37 @@ class PdfJsUtil {
     double temp;
     if (transform[0] != 0) {
       if (transform[0] < 0) {
-        temp = minMax[0]; minMax[0] = minMax[2]; minMax[2] = temp;
+        temp = minMax[0];
+        minMax[0] = minMax[2];
+        minMax[2] = temp;
       }
       minMax[0] *= transform[0];
       minMax[2] *= transform[0];
       if (transform[3] < 0) {
-        temp = minMax[1]; minMax[1] = minMax[3]; minMax[3] = temp;
+        temp = minMax[1];
+        minMax[1] = minMax[3];
+        minMax[3] = temp;
       }
       minMax[1] *= transform[3];
       minMax[3] *= transform[3];
     } else {
-      temp = minMax[0]; minMax[0] = minMax[1]; minMax[1] = temp;
-      temp = minMax[2]; minMax[2] = minMax[3]; minMax[3] = temp;
+      temp = minMax[0];
+      minMax[0] = minMax[1];
+      minMax[1] = temp;
+      temp = minMax[2];
+      minMax[2] = minMax[3];
+      minMax[3] = temp;
       if (transform[1] < 0) {
-        temp = minMax[1]; minMax[1] = minMax[3]; minMax[3] = temp;
+        temp = minMax[1];
+        minMax[1] = minMax[3];
+        minMax[3] = temp;
       }
       minMax[1] *= transform[1];
       minMax[3] *= transform[1];
       if (transform[2] < 0) {
-        temp = minMax[0]; minMax[0] = minMax[2]; minMax[2] = temp;
+        temp = minMax[0];
+        minMax[0] = minMax[2];
+        minMax[2] = temp;
       }
       minMax[0] *= transform[2];
       minMax[2] *= transform[2];
@@ -496,8 +531,10 @@ class PdfJsUtil {
   static List<double> inverseTransform(List<double> m) {
     final d = m[0] * m[3] - m[1] * m[2];
     return [
-      m[3] / d, -m[1] / d,
-      -m[2] / d, m[0] / d,
+      m[3] / d,
+      -m[1] / d,
+      -m[2] / d,
+      m[0] / d,
       (m[2] * m[5] - m[4] * m[3]) / d,
       (m[4] * m[1] - m[5] * m[0]) / d,
     ];
@@ -517,17 +554,27 @@ class PdfJsUtil {
 
   static List<double> normalizeRect(List<double> rect) {
     final r = List<double>.from(rect);
-    if (rect[0] > rect[2]) { r[0] = rect[2]; r[2] = rect[0]; }
-    if (rect[1] > rect[3]) { r[1] = rect[3]; r[3] = rect[1]; }
+    if (rect[0] > rect[2]) {
+      r[0] = rect[2];
+      r[2] = rect[0];
+    }
+    if (rect[1] > rect[3]) {
+      r[1] = rect[3];
+      r[3] = rect[1];
+    }
     return r;
   }
 
   static List<double>? intersect(List<double> rect1, List<double> rect2) {
-    final xLow = math.max(math.min(rect1[0], rect1[2]), math.min(rect2[0], rect2[2]));
-    final xHigh = math.min(math.max(rect1[0], rect1[2]), math.max(rect2[0], rect2[2]));
+    final xLow =
+        math.max(math.min(rect1[0], rect1[2]), math.min(rect2[0], rect2[2]));
+    final xHigh =
+        math.min(math.max(rect1[0], rect1[2]), math.max(rect2[0], rect2[2]));
     if (xLow > xHigh) return null;
-    final yLow = math.max(math.min(rect1[1], rect1[3]), math.min(rect2[1], rect2[3]));
-    final yHigh = math.min(math.max(rect1[1], rect1[3]), math.max(rect2[1], rect2[3]));
+    final yLow =
+        math.max(math.min(rect1[1], rect1[3]), math.min(rect2[1], rect2[3]));
+    final yHigh =
+        math.min(math.max(rect1[1], rect1[3]), math.max(rect2[1], rect2[3]));
     if (yLow > yHigh) return null;
     return [xLow, yLow, xHigh, yHigh];
   }
@@ -539,14 +586,23 @@ class PdfJsUtil {
     minMax[2] = math.max(minMax[2], math.max(x0, x3));
     minMax[3] = math.max(minMax[3], math.max(y0, y3));
 
-    _getExtremum(x0, x1, x2, x3, y0, y1, y2, y3,
-        3 * (-x0 + 3 * (x1 - x2) + x3), 6 * (x0 - 2 * x1 + x2), 3 * (x1 - x0), minMax);
-    _getExtremum(x0, x1, x2, x3, y0, y1, y2, y3,
-        3 * (-y0 + 3 * (y1 - y2) + y3), 6 * (y0 - 2 * y1 + y2), 3 * (y1 - y0), minMax);
+    _getExtremum(x0, x1, x2, x3, y0, y1, y2, y3, 3 * (-x0 + 3 * (x1 - x2) + x3),
+        6 * (x0 - 2 * x1 + x2), 3 * (x1 - x0), minMax);
+    _getExtremum(x0, x1, x2, x3, y0, y1, y2, y3, 3 * (-y0 + 3 * (y1 - y2) + y3),
+        6 * (y0 - 2 * y1 + y2), 3 * (y1 - y0), minMax);
   }
 
-  static void _getExtremumOnCurve(double x0, double x1, double x2, double x3,
-      double y0, double y1, double y2, double y3, double t, List<double> minMax) {
+  static void _getExtremumOnCurve(
+      double x0,
+      double x1,
+      double x2,
+      double x3,
+      double y0,
+      double y1,
+      double y2,
+      double y3,
+      double t,
+      List<double> minMax) {
     if (t <= 0 || t >= 1) return;
     final mt = 1 - t;
     final tt = t * t;
@@ -559,9 +615,19 @@ class PdfJsUtil {
     minMax[3] = math.max(minMax[3], y);
   }
 
-  static void _getExtremum(double x0, double x1, double x2, double x3,
-      double y0, double y1, double y2, double y3,
-      double a, double b, double c, List<double> minMax) {
+  static void _getExtremum(
+      double x0,
+      double x1,
+      double x2,
+      double x3,
+      double y0,
+      double y1,
+      double y2,
+      double y3,
+      double a,
+      double b,
+      double c,
+      List<double> minMax) {
     if (a.abs() < 1e-12) {
       if (b.abs() >= 1e-12) {
         _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, -c / b, minMax);
@@ -572,8 +638,10 @@ class PdfJsUtil {
     if (delta < 0) return;
     final sqrtDelta = math.sqrt(delta);
     final a2 = 2 * a;
-    _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, (-b + sqrtDelta) / a2, minMax);
-    _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, (-b - sqrtDelta) / a2, minMax);
+    _getExtremumOnCurve(
+        x0, x1, x2, x3, y0, y1, y2, y3, (-b + sqrtDelta) / a2, minMax);
+    _getExtremumOnCurve(
+        x0, x1, x2, x3, y0, y1, y2, y3, (-b - sqrtDelta) / a2, minMax);
   }
 }
 

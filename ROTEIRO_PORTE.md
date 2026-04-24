@@ -95,14 +95,14 @@ lib/src/
 |---|-----------|-------------|-------------|
 | 1 | `core/encodings.js` | `core/encodings.dart` | ✅ |
 | 2 | `core/fonts_utils.js` | `core/fonts_utils.dart` | ✅ |
-| 3 | `core/fonts.js` | `core/fonts.dart` | 🔴 (122KB) |
+| 3 | `core/fonts.js` | `core/fonts.dart` | 🔄 Parcial: helpers, detecção, mapas, tabelas OpenType/TTC, `checkAndRepair` inicial, `Glyph`, `Font` texto/export, `ErrorFont` |
 | 4 | `core/cff_parser.js` | `core/cff_parser.dart` | ✅ |
 | 5 | `core/cff_font.js` | `core/cff_font.dart` | ✅ |
 | 6 | `core/type1_font.js` | `core/type1_font.dart` | ✅ |
 | 7 | `core/type1_parser.js` | `core/type1_parser.dart` | ✅ |
 | 8 | `core/font_renderer.js` | `core/font_renderer.dart` | 🟡 |
-| 9 | `core/font_substitutions.js` | `core/font_substitutions.dart` | 🟡 |
-| 10 | `core/glyf.js` | `core/glyf.dart` | 🟡 |
+| 9 | `core/font_substitutions.js` | `core/font_substitutions.dart` | ✅ |
+| 10 | `core/glyf.js` | `core/glyf.dart` | ✅ |
 | 11 | `core/glyphlist.js` | `core/glyphlist.dart` | ✅ |
 | 12 | `core/charsets.js` | `core/charsets.dart` | ✅ |
 | 13 | `core/standard_fonts.js` | `core/standard_fonts.dart` | ✅ |
@@ -111,14 +111,14 @@ lib/src/
 | 16 | `core/cmap.js` | `core/cmap.dart` | ✅ |
 | 17 | `core/binary_cmap.js` | `core/binary_cmap.dart` | ✅ |
 | 18 | `core/to_unicode_map.js` | `core/to_unicode_map.dart` | ✅ |
-| 19 | `core/opentype_file_builder.js` | `core/opentype_file_builder.dart` | 🟡 |
+| 19 | `core/opentype_file_builder.js` | `core/opentype_file_builder.dart` | ✅ |
 | 20-24 | `core/*_factors.js`, `core/liberationsans_widths.js` | `core/*_factors.dart` | 🟢 (dados) |
 
 ### Fase 6 — Core Rendering & Document
 
 | # | Arquivo JS | Arquivo Dart | Complexidade |
 |---|-----------|-------------|-------------|
-| 1 | `core/colorspace.js` | `core/colorspace.dart` | 🟡 |
+| 1 | `core/colorspace.js` | `core/colorspace.dart` | 🔄 Parcial: Device/Indexed/Alternate/CalGray |
 | 2 | `core/evaluator.js` | `core/evaluator.dart` | 🔴 (176KB!) |
 | 3 | `core/document.js` | `core/document.dart` | 🔴 (61KB) |
 | 4 | `core/catalog.js` | `core/catalog.dart` | 🔴 (56KB) |
@@ -126,6 +126,15 @@ lib/src/
 | 6-18 | Restante | `core/*.dart` | 🟡 |
 
 ### Fase 7 — Core Utilitários Secundários (~14 arquivos) 🟡
+
+| # | Arquivo JS | Arquivo Dart | Status |
+|---|-----------|-------------|--------|
+| 1 | `core/xml_parser.js` | `core/xml_parser.dart` | ✅ |
+| 2 | `core/metadata_parser.js` | `core/metadata_parser.dart` | ✅ |
+| 3 | `core/dataset_reader.js` | `core/dataset_reader.dart` | ✅ |
+| 4 | `core/cleanup_helper.js` | `core/cleanup_helper.dart` | ✅ |
+| 5 | `core/colorspace_utils.js` | `core/colorspace_utils.dart` | ✅ |
+| 6-14 | Restante | `core/*.dart` | 🟡 |
 
 ### Fase 8 — Core XFA (27 arquivos) ⏳ Diferido
 

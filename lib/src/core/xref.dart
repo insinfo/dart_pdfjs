@@ -128,11 +128,11 @@ class XRef {
       warn("Indexing all PDF objects");
       trailerDict = indexObjects();
     }
-    
+
     if (trailerDict == null) {
-        throw XRefParseException();
+      throw XRefParseException();
     }
-    
+
     trailerDict.assignXref(this);
     trailer = trailerDict;
 
@@ -149,7 +149,8 @@ class XRef {
     if (encryptDict is Dict) {
       final ids = trailerDict.get("ID");
       // ignore: unused_local_variable
-      final String fileId = (ids is List && ids.isNotEmpty) ? ids[0].toString() : "";
+      final String fileId =
+          (ids is List && ids.isNotEmpty) ? ids[0].toString() : "";
       encryptDict.suppressEncryption = true;
       // TODO: CipherTransformFactory instanciation
       // this.encrypt = CipherTransformFactory(encryptDict, fileId, pdfManager.password);
@@ -188,16 +189,17 @@ class XRef {
 
   Dict processXRefTable(Parser parser) {
     tableState ??= XRefTableState(
-        entryNum: 0,
-        streamPos: parser.lexer.stream.pos,
-        parserBuf1: parser.buf1,
-        parserBuf2: parser.buf2,
-      );
+      entryNum: 0,
+      streamPos: parser.lexer.stream.pos,
+      parserBuf1: parser.buf1,
+      parserBuf2: parser.buf2,
+    );
 
     final obj = readXRefTable(parser);
 
     if (!isCmd(obj, "trailer")) {
-      throw FormatException("Invalid XRef table: could not find trailer dictionary");
+      throw FormatException(
+          "Invalid XRef table: could not find trailer dictionary");
     }
 
     dynamic dict = parser.getObj();
@@ -205,7 +207,8 @@ class XRef {
       dict = dict.dict;
     }
     if (dict is! Dict) {
-      throw FormatException("Invalid XRef table: could not parse trailer dictionary");
+      throw FormatException(
+          "Invalid XRef table: could not parse trailer dictionary");
     }
     tableState = null;
 
@@ -233,7 +236,7 @@ class XRef {
 
       int first = state.firstEntryNum as int;
       final int count = state.entryCount as int;
-      
+
       for (int i = state.entryNum; i < count; i++) {
         state.streamPos = stream.pos;
         state.entryNum = i;
@@ -259,7 +262,8 @@ class XRef {
         }
 
         if (offsetObj is! int || genObj is! int || !(free || uncompressed)) {
-          throw FormatException("Invalid entry in XRef subsection: \$first, \$count");
+          throw FormatException(
+              "Invalid entry in XRef subsection: \$first, \$count");
         }
 
         if (i == 0 && free && first == 1) {
@@ -268,12 +272,14 @@ class XRef {
 
         final targetIndex = i + first;
         if (targetIndex >= entries.length || entries[targetIndex] == null) {
-          _setEntry(targetIndex, XRefEntry(
-            offset: offsetObj,
-            gen: genObj,
-            free: free,
-            uncompressed: uncompressed,
-          ));
+          _setEntry(
+              targetIndex,
+              XRefEntry(
+                offset: offsetObj,
+                gen: genObj,
+                free: free,
+                uncompressed: uncompressed,
+              ));
         }
       }
 
@@ -371,12 +377,14 @@ class XRef {
 
         final targetIndex = first + i;
         if (targetIndex >= entries.length || entries[targetIndex] == null) {
-          _setEntry(targetIndex, XRefEntry(
-            offset: offset,
-            gen: generation,
-            free: free,
-            uncompressed: uncompressed,
-          ));
+          _setEntry(
+              targetIndex,
+              XRefEntry(
+                offset: offset,
+                gen: generation,
+                free: free,
+                uncompressed: uncompressed,
+              ));
         }
       }
 
@@ -407,7 +415,8 @@ class XRef {
   String _readToken(Uint8List data, int offset) {
     final sb = StringBuffer();
     int ch = data[offset];
-    while (ch != 0x0a && ch != 0x0d && ch != 0x3c) { // LF, CR, '<'
+    while (ch != 0x0a && ch != 0x0d && ch != 0x3c) {
+      // LF, CR, '<'
       sb.writeCharCode(ch);
       if (++offset >= data.length) {
         break;
@@ -421,12 +430,23 @@ class XRef {
     const int TAB = 0x9, LF = 0xa, CR = 0xd, SPACE = 0x20;
     const int PERCENT = 0x25;
 
-    final gEndobjRegExp = RegExp(r'\b(endobj|\d+\s+\d+\s+obj|xref|trailer\s*<<)\b');
+    final gEndobjRegExp =
+        RegExp(r'\b(endobj|\d+\s+\d+\s+obj|xref|trailer\s*<<)\b');
     final gStartxrefRegExp = RegExp(r'\b(startxref|\d+\s+\d+\s+obj)\b');
     final objRegExp = RegExp(r'^(\d+)\s+(\d+)\s+obj\b');
 
     final trailerBytes = [116, 114, 97, 105, 108, 101, 114]; // trailer
-    final startxrefBytes = [115, 116, 97, 114, 116, 120, 114, 101, 102]; // startxref
+    final startxrefBytes = [
+      115,
+      116,
+      97,
+      114,
+      116,
+      120,
+      114,
+      101,
+      102
+    ]; // startxref
     final xrefBytes = [47, 88, 82, 101, 102]; // /XRef
 
     entries.clear();
@@ -438,8 +458,10 @@ class XRef {
     final length = buffer.length;
     // stream.start in dart port: we assume 0 or basestream property
     int streamStart = 0;
-    try { streamStart = (stream as dynamic).start ?? 0; } catch(_) {}
-    
+    try {
+      streamStart = (stream as dynamic).start ?? 0;
+    } catch (_) {}
+
     int position = streamStart;
     final trailers = <int>[];
     final xrefStms = <int>[];
@@ -458,11 +480,12 @@ class XRef {
         } while (ch != LF && ch != CR);
         continue;
       }
-      
+
       final token = _readToken(buffer, position);
       final matchObj = objRegExp.firstMatch(token);
 
-      if (token.startsWith("xref") && (token.length == 4 || RegExp(r'\s').hasMatch(token[4]))) {
+      if (token.startsWith("xref") &&
+          (token.length == 4 || RegExp(r'\s').hasMatch(token[4]))) {
         position += _skipUntil(buffer, position, trailerBytes);
         trailers.add(position);
         position += _skipUntil(buffer, position, startxrefBytes);
@@ -483,54 +506,61 @@ class XRef {
             updateEntries = true;
           } catch (ex) {
             if (ex is ParserEOFException) {
-               warn('indexObjects -- checking object ($token): "\$ex".');
+              warn('indexObjects -- checking object ($token): "\$ex".');
             } else {
-               updateEntries = true;
+              updateEntries = true;
             }
           }
         }
         if (updateEntries) {
-          _setEntry(num, XRefEntry(
-            offset: position - streamStart,
-            gen: gen,
-            uncompressed: true,
-          ));
+          _setEntry(
+              num,
+              XRefEntry(
+                offset: position - streamStart,
+                gen: gen,
+                uncompressed: true,
+              ));
         }
 
-        final matchEnd = gEndobjRegExp.allMatches(bufferStr, startPos).firstOrNull;
+        final matchEnd =
+            gEndobjRegExp.allMatches(bufferStr, startPos).firstOrNull;
         if (matchEnd != null) {
           final endPos = matchEnd.end;
           contentLength = endPos - position;
           if (matchEnd.group(1) != "endobj") {
-             contentLength -= matchEnd.group(1)!.length + 1;
+            contentLength -= matchEnd.group(1)!.length + 1;
           }
         } else {
           contentLength = length - position;
         }
-        
+
         if (position + contentLength > length) {
-           contentLength = length - position;
+          contentLength = length - position;
         }
         final content = buffer.sublist(position, position + contentLength);
         final xrefTagOffset = _skipUntil(content, 0, xrefBytes);
-        if (xrefTagOffset < contentLength && xrefTagOffset + 5 < content.length && content[xrefTagOffset + 5] < 64) {
+        if (xrefTagOffset < contentLength &&
+            xrefTagOffset + 5 < content.length &&
+            content[xrefTagOffset + 5] < 64) {
           xrefStms.add(position - streamStart);
           _xrefStms.add(position - streamStart);
         }
 
         position += contentLength;
-      } else if (token.startsWith("trailer") && (token.length == 7 || RegExp(r'\s').hasMatch(token[7]))) {
+      } else if (token.startsWith("trailer") &&
+          (token.length == 7 || RegExp(r'\s').hasMatch(token[7]))) {
         trailers.add(position);
         final startPos = position + token.length;
         int contentLength;
-        
-        final matchStart = gStartxrefRegExp.allMatches(bufferStr, startPos).firstOrNull;
+
+        final matchStart =
+            gStartxrefRegExp.allMatches(bufferStr, startPos).firstOrNull;
         if (matchStart != null) {
-           final endPos = matchStart.end;
-           contentLength = endPos - position;
-           if (matchStart.group(1) != "startxref") {
-              contentLength -= matchStart.group(1)!.length + 1;
-           }
+          final endPos = matchStart.end;
+          contentLength = endPos - position;
+          if (matchStart.group(1) != "startxref") {
+            contentLength -= matchStart.group(1)!.length + 1;
+          }
         } else {
           contentLength = length - position;
         }
@@ -560,7 +590,7 @@ class XRef {
 
       final dict = parser.getObj();
       if (dict is! Dict) continue;
-      
+
       trailerDicts.add(dict);
       if (dict.has("Encrypt")) {
         isEncrypted = true;
@@ -570,22 +600,22 @@ class XRef {
     dynamic trailerDict;
     dynamic trailerError;
     final dictsToTest = [...trailerDicts, "genFallback", ...trailerDicts];
-    
+
     for (final dict in dictsToTest) {
       if (dict == "genFallback") {
         if (trailerError == null) break;
         _generationFallback = true;
         continue;
       }
-      
+
       bool validPagesDict = false;
       try {
         final rootDict = (dict as Dict).get("Root");
         if (rootDict is! Dict) continue;
-        
+
         final pagesDict = rootDict.get("Pages");
         if (pagesDict is! Dict) continue;
-        
+
         final pagesCount = pagesDict.get("Count");
         if (pagesCount is int) {
           validPagesDict = true;
@@ -594,8 +624,10 @@ class XRef {
         trailerError = ex;
         continue;
       }
-      
-      if (validPagesDict && (!isEncrypted || dict.has("Encrypt")) && dict.has("ID")) {
+
+      if (validPagesDict &&
+          (!isEncrypted || dict.has("Encrypt")) &&
+          dict.has("ID")) {
         return dict;
       }
       trailerDict = dict;
@@ -632,7 +664,9 @@ class XRef {
   }
 
   Dict? readXRef([bool recoveryMode = false]) {
-    final streamStart = (stream as dynamic).start != null ? (stream as dynamic).start as int : 0;
+    final streamStart = (stream as dynamic).start != null
+        ? (stream as dynamic).start as int
+        : 0;
     final startXRefParsedCache = <int>{};
 
     while (startXRefQueue.isNotEmpty) {
@@ -666,7 +700,9 @@ class XRef {
             startXRefQueue.add(obj);
           }
         } else if (obj is int) {
-          if (parser.getObj() is! int || !isCmd(parser.getObj(), "obj") || (obj = parser.getObj()) is! BaseStream) {
+          if (parser.getObj() is! int ||
+              !isCmd(parser.getObj(), "obj") ||
+              (obj = parser.getObj()) is! BaseStream) {
             throw FormatException("Invalid XRef stream");
           }
           dict = processXRefStream(obj as BaseStream);
@@ -702,7 +738,8 @@ class XRef {
   XRefEntry? getEntry(int i) {
     if (i >= entries.length) return null;
     final xrefEntry = entries[i];
-    if (xrefEntry != null && !xrefEntry.free) { // offset is implicit in our class
+    if (xrefEntry != null && !xrefEntry.free) {
+      // offset is implicit in our class
       return xrefEntry;
     }
     return null;
@@ -725,13 +762,13 @@ class XRef {
       }
       return cacheEntry;
     }
-    
+
     dynamic xrefEntry = getEntry(num);
 
     if (xrefEntry == null) {
       return xrefEntry;
     }
-    
+
     if (_pendingRefs.has(ref)) {
       _pendingRefs.remove(ref);
       warn("Ignoring circular reference: \$ref.");
@@ -748,7 +785,7 @@ class XRef {
       _pendingRefs.remove(ref);
       rethrow;
     }
-    
+
     if (xrefEntry is Dict) {
       xrefEntry.objId = ref.toString();
     } else if (xrefEntry is BaseStream) {
@@ -759,27 +796,31 @@ class XRef {
     return xrefEntry;
   }
 
-  dynamic fetchUncompressed(Ref ref, XRefEntry xrefEntry, [bool suppressEncryption = false]) {
+  dynamic fetchUncompressed(Ref ref, XRefEntry xrefEntry,
+      [bool suppressEncryption = false]) {
     final gen = ref.gen;
     int num = ref.num;
-    
+
     if (xrefEntry.gen != gen) {
       final msg = "Inconsistent generation in XRef: \$ref";
       if (_generationFallback && xrefEntry.gen < gen) {
         warn(msg);
-        return fetchUncompressed(Ref.get(num, xrefEntry.gen), xrefEntry, suppressEncryption);
+        return fetchUncompressed(
+            Ref.get(num, xrefEntry.gen), xrefEntry, suppressEncryption);
       }
       throw XRefEntryException(msg);
     }
-    
-    final streamStart = (stream as dynamic).start != null ? (stream as dynamic).start as int : 0;
+
+    final streamStart = (stream as dynamic).start != null
+        ? (stream as dynamic).start as int
+        : 0;
     final subStream = stream.makeSubStream(xrefEntry.offset + streamStart);
     final parser = Parser(
       lexer: Lexer(subStream),
       xref: this,
       allowStreams: true,
     );
-    
+
     final obj1 = parser.getObj();
     final obj2 = parser.getObj();
     final obj3 = parser.getObj();
@@ -787,7 +828,7 @@ class XRef {
     if (obj1 != num || obj2 != gen || obj3 is! Cmd) {
       throw XRefEntryException("Bad (uncompressed) XRef entry: \$ref");
     }
-    if ((obj3 as Cmd).cmd != "obj") {
+    if (obj3.cmd != "obj") {
       if ((obj3).cmd.startsWith("obj")) {
         num = int.tryParse((obj3).cmd.substring(3)) ?? num;
         if (num != ref.num) {
@@ -796,55 +837,58 @@ class XRef {
       }
       throw XRefEntryException("Bad (uncompressed) XRef entry: \$ref");
     }
-    
+
     dynamic parsedObj;
     if (encrypt != null && !suppressEncryption) {
       parsedObj = parser.getObj(encrypt.createCipherTransform(num, gen));
     } else {
       parsedObj = parser.getObj();
     }
-    
+
     if (parsedObj is! BaseStream) {
       _cacheMap[num] = parsedObj;
     }
     return parsedObj;
   }
 
-  dynamic fetchCompressed(Ref ref, XRefEntry xrefEntry, [bool suppressEncryption = false]) {
+  dynamic fetchCompressed(Ref ref, XRefEntry xrefEntry,
+      [bool suppressEncryption = false]) {
     final tableOffset = xrefEntry.offset;
     final objStmStream = fetch(Ref.get(tableOffset, 0));
-    
+
     if (objStmStream is! BaseStream) {
       throw FormatException("bad ObjStm stream");
     }
-    
+
     final first = (objStmStream.dict as Dict).get("First");
     final n = (objStmStream.dict as Dict).get("N");
-    
+
     if (first is! int || n is! int) {
       throw FormatException("invalid first and n parameters for ObjStm stream");
     }
-    
+
     Parser parser = Parser(
       lexer: Lexer(objStmStream),
       xref: this,
       allowStreams: true,
     );
-    
+
     final nums = List<int>.filled(n, 0);
     final offsets = List<int>.filled(n, 0);
-    
+
     for (int i = 0; i < n; ++i) {
       final numObj = parser.getObj();
       if (numObj is! int) {
-        throw FormatException("invalid object number in the ObjStm stream: \$numObj");
+        throw FormatException(
+            "invalid object number in the ObjStm stream: \$numObj");
       }
       final offsetObj = parser.getObj();
       if (offsetObj is! int) {
-        throw FormatException("invalid object offset in the ObjStm stream: \$offsetObj");
+        throw FormatException(
+            "invalid object offset in the ObjStm stream: \$offsetObj");
       }
       nums[i] = numObj;
-      
+
       final entry = getEntry(numObj);
       if (entry != null && entry.offset == tableOffset && entry.gen != i) {
         entry.gen = i;
@@ -852,18 +896,20 @@ class XRef {
       offsets[i] = offsetObj;
     }
 
-    final start = ((objStmStream as dynamic).start != null ? (objStmStream as dynamic).start as int : 0) + first;
+    final start = ((objStmStream as dynamic).start != null
+            ? (objStmStream as dynamic).start as int
+            : 0) +
+        first;
     final parsedEntries = List<dynamic>.filled(n, null);
-    
+
     for (int i = 0; i < n; ++i) {
       final length = i < n - 1 ? offsets[i + 1] - offsets[i] : null;
       if (length != null && length < 0) {
         throw FormatException("Invalid offset in the ObjStm stream.");
       }
       parser = Parser(
-        lexer: Lexer(
-          objStmStream.makeSubStream(start + offsets[i], length, objStmStream.dict)
-        ),
+        lexer: Lexer(objStmStream.makeSubStream(
+            start + offsets[i], length, objStmStream.dict)),
         xref: this,
         allowStreams: true,
       );
@@ -871,14 +917,14 @@ class XRef {
       final obj = parser.getObj();
       parsedEntries[i] = obj;
       if (obj is BaseStream) continue;
-      
+
       final num = nums[i];
       final entry = num < entries.length ? entries[num] : null;
       if (entry != null && entry.offset == tableOffset && entry.gen == i) {
         _cacheMap[num] = obj;
       }
     }
-    
+
     final result = parsedEntries[xrefEntry.gen];
     if (result == null) {
       throw XRefEntryException("Bad (compressed) XRef entry: \$ref");
@@ -886,7 +932,8 @@ class XRef {
     return result;
   }
 
-  Future<dynamic> fetchIfRefAsync(dynamic obj, [bool suppressEncryption = false]) async {
+  Future<dynamic> fetchIfRefAsync(dynamic obj,
+      [bool suppressEncryption = false]) async {
     if (obj is Ref) {
       return fetchAsync(obj, suppressEncryption);
     }
@@ -901,7 +948,8 @@ class XRef {
         rethrow;
       }
       if (pdfManager != null && pdfManager.requestRange != null) {
-        await pdfManager.requestRange((ex as dynamic).begin, (ex as dynamic).end);
+        await pdfManager.requestRange(
+            (ex as dynamic).begin, (ex as dynamic).end);
         return fetchAsync(ref, suppressEncryption);
       } else {
         rethrow;
