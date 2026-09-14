@@ -886,7 +886,7 @@ bool isValidExplicitDest(
 
   final args = dest.sublist(2);
   var allowNull = true;
-  final zoomName = (zoom as dynamic).name;
+  final zoomName = zoom is Map ? zoom['name'] : (zoom as dynamic).name;
   switch (zoomName) {
     case 'XYZ':
       if (args.length < 2 || args.length > 3) {
@@ -995,7 +995,8 @@ class Util {
     p[pos + 1] = p0 * m[1] + p1 * m[3] + m[5];
   }
 
-  static void applyTransformToBezier(List<num> p, List<num> transform, [int pos = 0]) {
+  static void applyTransformToBezier(List<num> p, List<num> transform,
+      [int pos = 0]) {
     final m0 = transform[0];
     final m1 = transform[1];
     final m2 = transform[2];
@@ -1058,10 +1059,14 @@ class Util {
       b2 += m1r2;
     }
 
-    output[0] = math.min(output[0], math.min(a0, math.min(a1, math.min(a2, a3))));
-    output[1] = math.min(output[1], math.min(b0, math.min(b1, math.min(b2, b3))));
-    output[2] = math.max(output[2], math.max(a0, math.max(a1, math.max(a2, a3))));
-    output[3] = math.max(output[3], math.max(b0, math.max(b1, math.max(b2, b3))));
+    output[0] =
+        math.min(output[0], math.min(a0, math.min(a1, math.min(a2, a3))));
+    output[1] =
+        math.min(output[1], math.min(b0, math.min(b1, math.min(b2, b3))));
+    output[2] =
+        math.max(output[2], math.max(a0, math.max(a1, math.max(a2, a3))));
+    output[3] =
+        math.max(output[3], math.max(b0, math.max(b1, math.max(b2, b3))));
   }
 
   static List<double> inverseTransform(List<num> m) {
@@ -1076,7 +1081,8 @@ class Util {
     ];
   }
 
-  static void singularValueDecompose2dScale(List<num> matrix, List<num> output) {
+  static void singularValueDecompose2dScale(
+      List<num> matrix, List<num> output) {
     final m0 = matrix[0];
     final m1 = matrix[1];
     final m2 = matrix[2];
@@ -1128,7 +1134,12 @@ class Util {
       return null;
     }
 
-    return [xLow.toDouble(), yLow.toDouble(), xHigh.toDouble(), yHigh.toDouble()];
+    return [
+      xLow.toDouble(),
+      yLow.toDouble(),
+      xHigh.toDouble(),
+      yHigh.toDouble()
+    ];
   }
 
   static void pointBoundingBox(num x, num y, List<num> minMax) {
@@ -1138,7 +1149,8 @@ class Util {
     minMax[3] = math.max(minMax[3], y);
   }
 
-  static void rectBoundingBox(num x0, num y0, num x1, num y1, List<num> minMax) {
+  static void rectBoundingBox(
+      num x0, num y0, num x1, num y1, List<num> minMax) {
     minMax[0] = math.min(minMax[0], math.min(x0, x1));
     minMax[1] = math.min(minMax[1], math.min(y0, y1));
     minMax[2] = math.max(minMax[2], math.max(x0, x1));
@@ -1198,8 +1210,10 @@ class Util {
     }
     final sqrtDelta = math.sqrt(delta);
     final a2 = 2 * a;
-    _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, (-b + sqrtDelta) / a2, minMax);
-    _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, (-b - sqrtDelta) / a2, minMax);
+    _getExtremumOnCurve(
+        x0, x1, x2, x3, y0, y1, y2, y3, (-b + sqrtDelta) / a2, minMax);
+    _getExtremumOnCurve(
+        x0, x1, x2, x3, y0, y1, y2, y3, (-b - sqrtDelta) / a2, minMax);
   }
 
   static void bezierBoundingBox(
@@ -1248,4 +1262,3 @@ class Util {
     );
   }
 }
-

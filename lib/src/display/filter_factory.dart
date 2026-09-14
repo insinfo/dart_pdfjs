@@ -423,5 +423,5 @@ class _HCMInfo {
   String url;
   web.Element? filter;
 
-  _HCMInfo({required this.key, required this.url, this.filter});
+  _HCMInfo({required this.key, required this.url});
 }

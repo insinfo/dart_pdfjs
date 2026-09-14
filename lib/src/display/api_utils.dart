@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import '../shared/util.dart';
+import '../shared/util.dart' as util;
 
 /// Parse and validate a URL property for the PDF source.
 /// Returns a [Uri] for the given value.
@@ -51,7 +52,8 @@ String? getFactoryUrlProp(dynamic val) {
   if (val.endsWith('/')) {
     return val;
   }
-  throw ArgumentError('Invalid factory url: "$val" must include trailing slash.');
+  throw ArgumentError(
+      'Invalid factory url: "$val" must include trailing slash.');
 }
 
 /// Check if [v] is a valid Ref proxy object.
@@ -74,7 +76,7 @@ bool isNameProxy(dynamic v) {
 
 /// Validate an explicit destination using proxy checks.
 bool isValidExplicitDest(dynamic dest) {
-  return isValidExplicitDestFn(isRefProxy, isNameProxy, dest);
+  return util.isValidExplicitDest(dest, isRefProxy, isNameProxy);
 }
 
 /// A loopback port that simulates message passing within the same isolate.

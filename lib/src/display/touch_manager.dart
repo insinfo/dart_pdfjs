@@ -6,13 +6,16 @@ import 'package:web/web.dart' as web;
 /// Manages touch events for pinch-to-zoom and related gestures.
 class TouchManager {
   final web.Element container;
+  // ignore: unused_field
   bool _isPinching = false;
   final Function? isPinchingStopped;
   final Function? isPinchingDisabled;
   final Function? onPinchStart;
   final Function? onPinching;
   final Function? onPinchEnd;
+  // ignore: unused_field
   Map<String, double>? _touchInfo;
+  // ignore: unused_field
   bool _disposed = false;
 
   /// The minimum touch distance to start pinching, in CSS pixels.

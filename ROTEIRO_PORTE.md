@@ -223,6 +223,5 @@ lib/src/
 - **Fase 6 (`core/` renderização e documento):** `colorspace.dart` 100% completo; `pattern.dart` 100% completo; `writer.dart` 100% concluído; `pdf_manager.dart` 100% concluído; `operator_list.dart` 100% concluído; `image_resizer.dart` 100% concluído; `image.dart` (`PDFImage`) 100% concluído; `document.dart` (`Page`, `PDFDocument`) 100% concluído; `evaluator.dart` e `annotation.dart` iniciados.
 - **Fase 7 (`core/` utilitários centrais):** `bidi.dart`, `intersector.dart`, `image_utils.dart`, `chunked_stream.dart`, `function.dart`, `default_appearance.dart`, `evaluator_preprocessor.dart`, `internal_viewer_utils.dart`, `postscript/lexer.dart` 100% concluídos.
 - **Fase 9 (`display/`):** `display/obj_bin_transform_display.dart` 100% concluído.
-- **Testes Unitários:** **192 testes passando (100% sucesso)**.
+- **Testes Unitários:** **326 testes passando (100% sucesso)**.
 - **Análise Estática (`dart analyze`):** **0 issues**.
-

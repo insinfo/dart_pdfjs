@@ -2,7 +2,6 @@
 // Ported to Dart, 2026. Apache License 2.0.
 
 import 'package:web/web.dart' as web;
-import 'dart:js_interop';
 
 import 'svg_factory.dart';
 

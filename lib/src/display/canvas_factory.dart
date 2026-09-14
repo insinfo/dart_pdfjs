@@ -18,6 +18,8 @@ abstract class BaseCanvasFactory {
 
   BaseCanvasFactory({bool enableHWA = false}) : _enableHWA = enableHWA;
 
+  bool get enableHWA => _enableHWA;
+
   /// Create a new canvas with the given dimensions.
   CanvasAndContext create(int width, int height) {
     if (width <= 0 || height <= 0) {

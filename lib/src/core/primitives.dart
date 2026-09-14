@@ -312,7 +312,6 @@ class RefSet extends Iterable<String> {
 class RefSetCache extends Iterable<dynamic> {
   final Map<String, dynamic> _map = {};
 
-  @override
   int get size => _map.length;
 
   @override

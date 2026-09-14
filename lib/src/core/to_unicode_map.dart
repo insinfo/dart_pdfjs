@@ -23,13 +23,13 @@ class ToUnicodeMap implements BaseToUnicodeMap {
   @override
   void forEach(void Function(dynamic charCode, int codePoint) callback) {
     if (_map is Map) {
-      (_map as Map).forEach((k, v) {
+      (_map).forEach((k, v) {
         if (v is String && v.isNotEmpty) {
           callback(k.toString(), v.runes.first);
         }
       });
     } else if (_map is List) {
-      final list = _map as List;
+      final list = _map;
       for (var i = 0; i < list.length; i++) {
         final v = list[i];
         if (v != null && v is String && v.isNotEmpty) {
@@ -41,9 +41,9 @@ class ToUnicodeMap implements BaseToUnicodeMap {
 
   @override
   bool has(int i) {
-    if (_map is Map) return (_map as Map).containsKey(i);
+    if (_map is Map) return (_map).containsKey(i);
     if (_map is List) {
-      final list = _map as List;
+      final list = _map;
       return i >= 0 && i < list.length && list[i] != null;
     }
     return false;
@@ -51,9 +51,9 @@ class ToUnicodeMap implements BaseToUnicodeMap {
 
   @override
   String? get(int i) {
-    if (_map is Map) return (_map as Map)[i] as String?;
+    if (_map is Map) return (_map)[i] as String?;
     if (_map is List) {
-      final list = _map as List;
+      final list = _map;
       return (i >= 0 && i < list.length) ? list[i] as String? : null;
     }
     return null;
@@ -62,10 +62,10 @@ class ToUnicodeMap implements BaseToUnicodeMap {
   @override
   int charCodeOf(dynamic value) {
     if (_map is List) {
-      return (_map as List).indexOf(value);
+      return (_map).indexOf(value);
     }
     if (_map is Map) {
-      for (final entry in (_map as Map).entries) {
+      for (final entry in (_map).entries) {
         if (entry.value == value) {
           return entry.key is int
               ? entry.key as int
@@ -80,16 +80,16 @@ class ToUnicodeMap implements BaseToUnicodeMap {
   void amend(Map<dynamic, String> map) {
     if (_map is Map) {
       map.forEach((k, v) {
-        (_map as Map)[k] = v;
+        (_map)[k] = v;
       });
     } else if (_map is List) {
       map.forEach((k, v) {
         final idx = k is int ? k : int.tryParse(k.toString());
         if (idx != null) {
-          while ((_map as List).length <= idx) {
-            (_map as List).add(null);
+          while ((_map).length <= idx) {
+            (_map).add(null);
           }
-          (_map as List)[idx] = v;
+          (_map)[idx] = v;
         }
       });
     }

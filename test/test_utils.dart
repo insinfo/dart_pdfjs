@@ -2,7 +2,6 @@
 // Ported to Dart, 2026. Apache License 2.0.
 
 import 'package:pdfjs/src/core/base_stream.dart';
-import 'package:pdfjs/src/core/document.dart';
 import 'package:pdfjs/src/core/primitives.dart';
 import 'package:pdfjs/src/core/stream.dart';
 

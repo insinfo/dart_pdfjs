@@ -35,8 +35,7 @@ class PagesMapper {
       pageNumberToId[i] = i + 1;
     }
     _pageNumberToId = pageNumberToId;
-    _prevPageNumbers = Int32List.fromList(
-        pageNumberToId.buffer.asInt32List());
+    _prevPageNumbers = Int32List.fromList(pageNumberToId.buffer.asInt32List());
   }
 
   Map<int, List<int>> _buildIdToPageNumber() {
@@ -72,7 +71,7 @@ class PagesMapper {
       index - removedBeforeTarget,
       0,
       remainingLen,
-    );
+    ).toInt();
 
     // Compact: keep only non-moved pages.
     var r = 0;
@@ -228,10 +227,8 @@ class PagesMapper {
     return _prevPageNumbers![pageNumber - 1];
   }
 
-  void _updatePrevPageNumbers(
-      Map<int, List<int>> prevIdToPageNumber,
-      [Set<int>? deletedPages,
-      bool isPaste = false]) {
+  void _updatePrevPageNumbers(Map<int, List<int>> prevIdToPageNumber,
+      [Set<int>? deletedPages, bool isPaste = false]) {
     final pageNumberToId = _pageNumberToId!;
     final prevPageNumbers = _prevPageNumbers!;
 

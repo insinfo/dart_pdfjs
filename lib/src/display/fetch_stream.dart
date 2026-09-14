@@ -12,8 +12,7 @@ class PDFFetchStream {
   String? responseOrigin;
 
   PDFFetchStream(this.source)
-      : headers = createHeaders(
-          true, source['httpHeaders']) {
+      : headers = createHeaders(true, source['httpHeaders']) {
     final url = source['url'];
     assert(url != null, 'PDFFetchStream requires a url.');
   }
@@ -50,6 +49,9 @@ class PDFFetchStreamRangeReader {
   final PDFFetchStream stream;
   final int begin;
   final int end;
+  // Kept for the asynchronous fetch implementation that will resolve the
+  // reader before its first read, matching PDF.js' `_readCapability`.
+  // ignore: unused_field
   final Completer<void> _readCompleter = Completer<void>();
 
   PDFFetchStreamRangeReader(this.stream, this.begin, this.end);

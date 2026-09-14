@@ -284,7 +284,8 @@ String getPdfFilenameFromUrl(dynamic url,
   // Check raw query for ?file2.pdf style queries
   if (parsed.query.isNotEmpty) {
     final query = parsed.query;
-    final m = RegExp(r'[^/?#=]+\.pdf\b', caseSensitive: false).allMatches(query);
+    final m =
+        RegExp(r'[^/?#=]+\.pdf\b', caseSensitive: false).allMatches(query);
     if (m.isNotEmpty) {
       return decodeName(m.last.group(0)!);
     }
@@ -508,10 +509,6 @@ void _hslToRgb(Float32List hsl, Float32List output) {
   }
 }
 
-double _computeLuminance(double x) {
-  return x <= 0.03928 ? x / 12.92 : math.pow((x + 0.055) / 1.055, 2.4).toDouble();
-}
-
 double _contrastRatio(Float32List hsl1, Float32List hsl2, Float32List output) {
   _hslToRgb(hsl1, output);
   final lum1 = 0.2126 * output[0] + 0.7152 * output[1] + 0.0722 * output[2];
@@ -649,9 +646,9 @@ List<int> getRGB(String color) {
     ];
   }
   // Try rgba
-  final matchA = RegExp(
-          r'rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)')
-      .firstMatch(color);
+  final matchA =
+      RegExp(r'rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)')
+          .firstMatch(color);
   if (matchA != null) {
     return [
       int.parse(matchA.group(1)!),

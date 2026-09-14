@@ -3,7 +3,6 @@
 
 import 'dart:typed_data';
 
-import '../shared/base_pdf_stream.dart';
 
 /// Transport stream for PDF data via PDFDataRangeTransport.
 class PDFDataTransportStream {
