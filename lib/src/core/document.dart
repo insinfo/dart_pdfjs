@@ -248,7 +248,10 @@ class Page {
   }
 
   Future<BaseStream> getContentStream() async {
-    final dynamic c = await pdfManager.ensure(this, 'content');
+    // Dart objects don't support JavaScript-style dynamic property lookup
+    // (`page['content']`). Access the typed getter directly so local document
+    // rendering cannot silently turn a valid content stream into NullStream.
+    final dynamic c = content;
     if (c is BaseStream && !c.isImageStream) {
       if (c.isAsync) {
         final bytes = await c.asyncGetBytes();
@@ -278,12 +281,16 @@ class Page {
     return shadow(
       this,
       'xfaData',
-      xfaFactory != null ? {'bbox': xfaFactory!.getBoundingBox(pageIndex)} : null,
+      xfaFactory != null
+          ? {'bbox': xfaFactory!.getBoundingBox(pageIndex)}
+          : null,
     );
   }
 
   Future<void> loadResources(List<String> keys) async {
-    _resourcesPromise ??= pdfManager.ensure(this, 'resources');
+    // See [getContentStream]: use the typed getter rather than routing a
+    // property name through BasePdfManager.ensure.
+    _resourcesPromise ??= Future<dynamic>.value(resources);
     await _resourcesPromise;
     await ObjectLoader.load(resources, keys, xref);
   }
@@ -569,7 +576,10 @@ class PDFDocument {
     String? hashOriginal;
     String? hashModified;
 
-    if (id is List && id.isNotEmpty && id[0] is String && (id[0] as String).length == 16) {
+    if (id is List &&
+        id.isNotEmpty &&
+        id[0] is String &&
+        (id[0] as String).length == 16) {
       hashOriginal = _bytesToHex(stringToBytes(id[0] as String));
       if (id.length > 1 && id[1] is String && (id[1] as String).length == 16) {
         hashModified = _bytesToHex(stringToBytes(id[1] as String));

@@ -127,7 +127,7 @@ lib/src/
 | 6 | `core/image_resizer.js` | `core/image_resizer.dart` | ✅ (Thresholds, codificador BMP puro Dart 1/24/32bpp, subamostragem) |
 | 7 | `core/image.js` | `core/image.dart` | ✅ (PDFImage, decodificação de cores/máscaras, extração bpc, RGBA) |
 | 8 | `core/document.js` | `core/document.dart` | ✅ (Page, PDFDocument, geometria, ciclo de vida, fingerprints, versioning) |
-| 9 | `core/evaluator.js` | `core/evaluator.dart` | 🔄 (PartialEvaluator estruturado) |
+| 9 | `core/evaluator.js` | `core/evaluator.dart` | 🔄 (caminho funcional para operadores, texto, recursos, Form/Image XObjects e ExtGState) |
 | 10 | `core/catalog.js` | `core/catalog.dart` | ✅ Completo |
 | 11 | `core/annotation.js` | `core/annotation.dart` | 🔄 (AnnotationFactory estruturado) |
 | 12 | `display/obj_bin_transform_display.js` | `display/obj_bin_transform_display.dart` | ✅ Deserialização binária display |
@@ -154,6 +154,10 @@ lib/src/
 ### Fase 8 — Core XFA (27 arquivos) ⏳ Diferido
 
 ### Fase 9 — Display (~35 arquivos) 🟡
+
+O caminho mínimo `getDocument → getPage → OperatorList → CanvasGraphics` já
+renderiza PDFs simples no Canvas 2D do navegador. Permanecem em evolução fontes
+e imagens avançadas, transparência, annotations, worker e streaming por ranges.
 
 ### Fase 10 — Scripting API (18 arquivos) ⏳ Diferido
 
@@ -234,8 +238,8 @@ e limpa o cache local `.dart_tool/test` antes de cada execução.
 - **Fase 3 (`core/` parsing e primitivas):** 100% concluída com testes.
 - **Fase 4 (`core/` decodificadores e streams de filtros):** 100% concluída com testes (inclui JPEG 2000 / JPX puro Dart).
 - **Fase 5 (`core/` fontes e métricas):** ~95% concluída (`font_renderer.dart`, tabelas de fatores de fontes `calibri`, `helvetica`, `myriadpro`, `segoeui`, `liberationsans_widths`, `xfa_fonts.dart`).
-- **Fase 6 (`core/` renderização e documento):** `colorspace.dart` 100% completo; `pattern.dart` 100% completo; `writer.dart` 100% concluído; `pdf_manager.dart` 100% concluído; `operator_list.dart` 100% concluído; `image_resizer.dart` 100% concluído; `image.dart` (`PDFImage`) 100% concluído; `document.dart` (`Page`, `PDFDocument`) 100% concluído; `evaluator.dart` e `annotation.dart` iniciados.
+- **Fase 6 (`core/` renderização e documento):** `colorspace.dart` 100% completo; `pattern.dart` 100% completo; `writer.dart` 100% concluído; `pdf_manager.dart` 100% concluído; `operator_list.dart` 100% concluído; `image_resizer.dart` 100% concluído; `image.dart` (`PDFImage`) 100% concluído; `document.dart` (`Page`, `PDFDocument`) 100% concluído; `evaluator.dart` já gera listas funcionais para PDFs simples e `annotation.dart` permanece parcial.
 - **Fase 7 (`core/` utilitários centrais):** `bidi.dart`, `intersector.dart`, `image_utils.dart`, `chunked_stream.dart`, `function.dart`, `default_appearance.dart`, `evaluator_preprocessor.dart`, `internal_viewer_utils.dart`, `postscript/lexer.dart` 100% concluídos.
-- **Fase 9 (`display/`):** factories DOM, objetos, imagens/texto XFA, transporte Fetch, seleção de backend e `text_layer.dart` concluídos; canvas e annotation layer permanecem em andamento.
-- **Testes Unitários:** **769 testes passando (728 VM + 41 Chrome, 100% sucesso)**.
+- **Fase 9 (`display/`):** API pública mínima e `CanvasGraphics` funcional concluídos para PDFs simples, além de factories DOM, objetos, imagens/texto XFA, transporte Fetch, seleção de backend e `text_layer.dart`; annotation layer e recursos avançados permanecem em andamento.
+- **Testes Unitários:** **924 testes passando (860 VM + 64 Chrome, 100% sucesso)**.
 - **Análise Estática (`dart analyze`):** **0 issues**.

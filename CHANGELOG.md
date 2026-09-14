@@ -36,6 +36,15 @@ All notable changes to this project will be documented in this file.
   charstrings, subroutines, widths, SEAC analysis, and CID font dictionaries.
 - Reference-derived CFF parsing, malformed-input, compiler round-trip, charset,
   encoding, FDSelect, and Type 2 charstring tests.
+- Public `getDocument` browser API with loading tasks, document/page proxies,
+  viewport creation, rendering tasks, cancellation, cleanup, byte and URL
+  loading, and a public `package:pdfjs/pdfjs.dart` entry point.
+- Canvas 2D renderer for graphics state, transforms, paths, clipping, colors,
+  text, blend modes, and RGB/RGBA/grayscale images.
+- Functional content-stream evaluator producing operator lists for basic
+  graphics, text, fonts, ExtGState, Form/Image XObjects, and inline images.
+- End-to-end browser coverage that parses and paints a real one-page PDF and
+  verifies the rendered Canvas pixels.
 
 ### Changed
 
@@ -46,7 +55,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 808 VM tests and 41 Chrome tests.
+- Increased coverage to 860 VM tests and 64 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 

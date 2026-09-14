@@ -4,9 +4,41 @@ A work-in-progress, pure Dart port of [Mozilla PDF.js](https://github.com/mozill
 The project targets web applications and uses `package:web` with
 `dart:js_interop`; deprecated `dart:html` APIs are intentionally not used.
 
-> This package is under active development. Core parsing, streams, filters,
-> fonts, image decoding, document structures, and part of the display layer
-> have been ported. The stable public barrel API is not available yet.
+> This package is under active development. Simple PDF documents can be loaded
+> and rendered to a browser Canvas. Advanced fonts, images, transparency,
+> annotations, workers, and range streaming are still being expanded.
+
+## Render a PDF in the browser
+
+```dart
+import 'dart:js_interop';
+import 'dart:typed_data';
+
+import 'package:pdfjs/pdfjs.dart';
+import 'package:web/web.dart' as web;
+
+Future<void> renderFirstPage(Uint8List pdfBytes) async {
+  final document = await getDocument(pdfBytes).promise;
+  final page = await document.getPage(1);
+  final viewport = page.getViewport(scale: 1.5);
+
+  final canvas = web.document.querySelector('#pdf') as web.HTMLCanvasElement
+    ..width = viewport.width.ceil()
+    ..height = viewport.height.ceil();
+  final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
+
+  await page
+      .render(RenderParameters(
+        canvasContext: context,
+        viewport: viewport,
+      ))
+      .promise;
+}
+```
+
+URLs can also be loaded directly in browser builds with
+`getDocument('https://example.com/document.pdf')`, subject to normal CORS
+rules.
 
 ## Requirements
 
