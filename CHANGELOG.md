@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
   ink, attachments, and AcroForm text/button/choice/signature widgets.
 - Annotation geometry, border, color, visibility, field hierarchy, option,
   serialization, and subtype coverage derived from PDF.js tests.
+- Structure-tree RoleMap resolution with cycle/depth protection and exhaustive
+  child-position, alias, malformed-map, and structure-kind coverage.
 
 ### Changed
 
@@ -35,7 +37,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 551 VM tests and 41 Chrome tests.
+- Increased coverage to 711 VM tests and 41 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 

@@ -56,7 +56,7 @@ class StructTreeRoot {
     }
     final positions = _kidRefToPosition;
     if (positions != null) {
-      return positions[kidRef.toString()] ?? double.nan.toInt();
+      return positions[kidRef.toString()] ?? -1;
     }
     return -1;
   }
@@ -99,6 +99,22 @@ class StructTreeRoot {
         roleMap[key] = value.name;
       }
     }
+  }
+
+  /// Resolves custom structure roles through RoleMap aliases.
+  ///
+  /// Malformed PDFs can contain cyclic aliases. Resolution is therefore
+  /// bounded and returns the last stable role instead of looping forever.
+  String resolveRole(String role) {
+    var current = role;
+    final visited = <String>{};
+    for (var depth = 0; depth < _maxDepth; depth++) {
+      if (!visited.add(current)) return current;
+      final mapped = roleMap[current];
+      if (mapped == null || mapped == current) return current;
+      current = mapped;
+    }
+    return current;
   }
 
   static Future<bool> canCreateStructureTree({
@@ -566,8 +582,7 @@ class StructTreeRoot {
     }
     if (cachedParentKids == null) {
       final fetched = xref.fetchIfRef(parentKidsRaw);
-      cachedParentKids =
-          fetched is List ? fetched.toList() : [parentKidsRaw];
+      cachedParentKids = fetched is List ? fetched.toList() : [parentKidsRaw];
       final parentKidsRef = xref.getNewTemporaryRef();
       cachedParentDict.set('K', parentKidsRef);
       cache.put(parentKidsRef, cachedParentKids);
@@ -747,8 +762,7 @@ class StructTreePage {
     if (parentTree == null) {
       return null;
     }
-    final ids =
-        root.structParentIds?.get(pageRef) as List<List<int>>?;
+    final ids = root.structParentIds?.get(pageRef) as List<List<int>>?;
     if (ids == null) {
       return null;
     }
@@ -776,8 +790,7 @@ class StructTreePage {
       return;
     }
     final id = pageDict.get('StructParents');
-    final ids =
-        root.structParentIds?.get(pageRef) as List<List<int>>?;
+    final ids = root.structParentIds?.get(pageRef) as List<List<int>>?;
     if (id is! int && ids == null) {
       return;
     }
@@ -891,8 +904,7 @@ class StructTreePage {
 
   /// Convert the tree structure into a simplified object for serialization.
   Map<String, dynamic> get serializable {
-    void nodeToSerializable(
-        StructElementNode node, Map<String, dynamic> parent,
+    void nodeToSerializable(StructElementNode node, Map<String, dynamic> parent,
         [int level = 0]) {
       if (level > _maxDepth) {
         warn('StructTree too deep to be fully serialized.');
