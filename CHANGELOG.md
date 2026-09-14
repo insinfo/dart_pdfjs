@@ -17,7 +17,8 @@ All notable changes to this project will be documented in this file.
 
 - Expanded the pure Dart PDF.js port across shared, core, XFA, and display
   modules.
-- Increased coverage to 330 VM tests and 19 Chrome tests.
+- Added lifecycle cleanup for bitmap resources held by `PDFObjects`.
+- Increased coverage to 332 VM tests and 19 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 

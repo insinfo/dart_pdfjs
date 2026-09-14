@@ -25,7 +25,7 @@ dart analyze
 
 Always use the project test runner instead of invoking `dart test` directly.
 It removes the large `dart_test.kernel.*` directories left in the system temp
-folder and clears `.dart_tool/test` before and after every run.
+folder after every run and clears `.dart_tool/test` before the next run.
 
 ```powershell
 # VM suite

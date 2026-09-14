@@ -11,9 +11,11 @@ $normalizedTempRoot = $tempRoot.TrimEnd($pathSeparators)
 $projectPrefix = $projectRoot.TrimEnd($pathSeparators) + [System.IO.Path]::DirectorySeparatorChar
 
 function Remove-DartTestArtifacts {
+    param([bool] $IncludeProjectCache = $false)
+
     $removedBytes = [long] 0
 
-    if (Test-Path -LiteralPath $testCache) {
+    if ($IncludeProjectCache -and (Test-Path -LiteralPath $testCache)) {
         if (-not $testCache.StartsWith($projectPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
             throw "Refusing to clean unexpected test cache: $testCache"
         }
@@ -43,11 +45,14 @@ function Remove-DartTestArtifacts {
 
 Push-Location $projectRoot
 try {
-    Remove-DartTestArtifacts
+    Remove-DartTestArtifacts -IncludeProjectCache $true
     & dart test @args
     $testExitCode = $LASTEXITCODE
 }
 finally {
+    # Dart's test process can finish while a compiler worker is still closing
+    # its incremental cache on Windows. Leave that small project-local cache
+    # for the next pre-run cleanup and immediately remove the large temp data.
     Remove-DartTestArtifacts
     Pop-Location
 }

@@ -61,7 +61,28 @@ class PDFObjects {
   }
 
   void clear() {
+    for (final obj in _objs.values) {
+      if (!obj.resolved) {
+        continue;
+      }
+      final data = obj.data;
+      final dynamic bitmap = data is Map ? data['bitmap'] : _bitmapOf(data);
+      if (bitmap != null) {
+        bitmap.close();
+      }
+    }
     _objs.clear();
+  }
+
+  static dynamic _bitmapOf(dynamic data) {
+    if (data == null) {
+      return null;
+    }
+    try {
+      return data.bitmap;
+    } on NoSuchMethodError {
+      return null;
+    }
   }
 
   Iterable<MapEntry<String, dynamic>> get entries sync* {
