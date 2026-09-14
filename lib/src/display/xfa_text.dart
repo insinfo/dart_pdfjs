@@ -22,11 +22,21 @@ class XfaText {
         str = node['value'] as String?;
       } else if (!XfaText.shouldBuildText(name ?? '')) {
         return;
-      } else if (node['attributes'] is Map &&
-          (node['attributes'] as Map)['textContent'] != null) {
-        str = (node['attributes'] as Map)['textContent'] as String?;
-      } else if (node['value'] is String) {
-        str = node['value'] as String;
+      } else if (node['attributes'] is Map) {
+        final textContent = (node['attributes'] as Map)['textContent'];
+        if (textContent is String && textContent.isNotEmpty) {
+          str = textContent;
+        } else {
+          final value = node['value'];
+          if (value is String && value.isNotEmpty) {
+            str = value;
+          }
+        }
+      } else {
+        final value = node['value'];
+        if (value is String && value.isNotEmpty) {
+          str = value;
+        }
       }
       if (str != null) {
         items.add({'str': str});
