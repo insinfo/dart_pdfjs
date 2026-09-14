@@ -163,6 +163,20 @@ lib/src/
 
 ## 🔧 Padrões de Conversão JS → Dart
 
+### Execução segura dos testes
+
+Use `./tool/run_tests.ps1` no lugar de executar `dart test` diretamente. O
+script remove os artefatos `dart_test.kernel.*` de `%TEMP%` e o cache local
+`.dart_tool/test` antes e depois da execução, inclusive no bloco `finally`.
+
+```powershell
+# Suíte Dart/VM
+./tool/run_tests.ps1
+
+# Teste que exige DOM/Chrome
+./tool/run_tests.ps1 test/display/canvas_factory_test.dart -p chrome
+```
+
 | JavaScript | Dart |
 |-----------|------|
 | `class X { #private }` | `class X { dynamic _private; }` |
@@ -222,6 +236,6 @@ lib/src/
 - **Fase 5 (`core/` fontes e métricas):** ~95% concluída (`font_renderer.dart`, tabelas de fatores de fontes `calibri`, `helvetica`, `myriadpro`, `segoeui`, `liberationsans_widths`, `xfa_fonts.dart`).
 - **Fase 6 (`core/` renderização e documento):** `colorspace.dart` 100% completo; `pattern.dart` 100% completo; `writer.dart` 100% concluído; `pdf_manager.dart` 100% concluído; `operator_list.dart` 100% concluído; `image_resizer.dart` 100% concluído; `image.dart` (`PDFImage`) 100% concluído; `document.dart` (`Page`, `PDFDocument`) 100% concluído; `evaluator.dart` e `annotation.dart` iniciados.
 - **Fase 7 (`core/` utilitários centrais):** `bidi.dart`, `intersector.dart`, `image_utils.dart`, `chunked_stream.dart`, `function.dart`, `default_appearance.dart`, `evaluator_preprocessor.dart`, `internal_viewer_utils.dart`, `postscript/lexer.dart` 100% concluídos.
-- **Fase 9 (`display/`):** `display/obj_bin_transform_display.dart` 100% concluído.
-- **Testes Unitários:** **326 testes passando (100% sucesso)**.
+- **Fase 9 (`display/`):** `display/obj_bin_transform_display.dart` e `display/canvas_factory.dart` 100% concluídos.
+- **Testes Unitários:** **333 testes passando (326 VM + 7 Chrome, 100% sucesso)**.
 - **Análise Estática (`dart analyze`):** **0 issues**.

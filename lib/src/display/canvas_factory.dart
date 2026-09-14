@@ -26,7 +26,12 @@ abstract class BaseCanvasFactory {
       throw ArgumentError('Invalid canvas size');
     }
     final canvas = createCanvasElement(width, height);
-    final ctx = canvas.getContext('2d') as web.CanvasRenderingContext2D?;
+    final ctx = canvas.getContext(
+      '2d',
+      web.CanvasRenderingContext2DSettings(
+        willReadFrequently: !_enableHWA,
+      ),
+    ) as web.CanvasRenderingContext2D?;
     return CanvasAndContext(canvas: canvas, context: ctx);
   }
 
@@ -61,12 +66,16 @@ abstract class BaseCanvasFactory {
 
 /// DOM-based canvas factory that creates canvas elements using the web package.
 class DOMCanvasFactory extends BaseCanvasFactory {
-  DOMCanvasFactory({bool enableHWA = false}) : super(enableHWA: enableHWA);
+  final web.Document ownerDocument;
+
+  DOMCanvasFactory({web.Document? ownerDocument, bool enableHWA = false})
+      : ownerDocument = ownerDocument ?? web.document,
+        super(enableHWA: enableHWA);
 
   @override
   web.HTMLCanvasElement createCanvasElement(int width, int height) {
     final canvas =
-        web.document.createElement('canvas') as web.HTMLCanvasElement;
+        ownerDocument.createElement('canvas') as web.HTMLCanvasElement;
     canvas.width = width;
     canvas.height = height;
     return canvas;
