@@ -3,6 +3,7 @@
 
 import 'dart:typed_data';
 import '../shared/util.dart';
+import 'jpeg_decoder.dart' as decoder;
 
 class JpegError extends BaseException {
   JpegError(String msg) : super(msg, 'JpegError');
@@ -41,10 +42,12 @@ class JpegImage {
   Map<String, dynamic>? jfif;
   Map<String, dynamic>? adobe;
   final List<JpegFrameComponent> components = [];
+  Uint8List? _encodedData;
 
   JpegImage([JpegOptions? options]) : options = options ?? JpegOptions();
 
   void parse(Uint8List data) {
+    _encodedData = Uint8List.fromList(data);
     if (data.length < 4) {
       throw JpegError('SOI not found');
     }
@@ -162,7 +165,43 @@ class JpegImage {
   }
 
   Uint8List getData(Map<String, dynamic> params) {
-    throw JpegError('JpegImage.getData is not implemented yet.');
+    final encoded = _encodedData;
+    if (encoded == null) throw JpegError('JPEG data has not been parsed.');
+    try {
+      final image = decoder.JpegDecoder.decode(encoded);
+      final targetWidth =
+          params['width'] is int ? params['width'] as int : image.width;
+      final targetHeight =
+          params['height'] is int ? params['height'] as int : image.height;
+      final forceRgba = params['forceRGBA'] == true;
+      final forceRgb = params['forceRGB'] == true || forceRgba;
+      final sourceChannels = image.bytesPerPixel;
+      final targetChannels = forceRgba ? 4 : (forceRgb ? 3 : sourceChannels);
+      final output = Uint8List(targetWidth * targetHeight * targetChannels);
+      for (var y = 0; y < targetHeight; y++) {
+        final sourceY = y * image.height ~/ targetHeight;
+        for (var x = 0; x < targetWidth; x++) {
+          final sourceX = x * image.width ~/ targetWidth;
+          final source = (sourceY * image.width + sourceX) * sourceChannels;
+          final target = (y * targetWidth + x) * targetChannels;
+          if (sourceChannels == 1 && targetChannels >= 3) {
+            output[target] =
+                output[target + 1] = output[target + 2] = image.pixels[source];
+          } else {
+            final copied = sourceChannels < targetChannels
+                ? sourceChannels
+                : targetChannels;
+            for (var channel = 0; channel < copied; channel++) {
+              output[target + channel] = image.pixels[source + channel];
+            }
+          }
+          if (targetChannels == 4) output[target + 3] = 255;
+        }
+      }
+      return output;
+    } on decoder.JpegDecodeException catch (error) {
+      throw JpegError(error.message);
+    }
   }
 
   static dynamic canUseImageDecoder(Uint8List data, int? colorTransform) {

@@ -27,6 +27,10 @@ All notable changes to this project will be documented in this file.
   serialization, and subtype coverage derived from PDF.js tests.
 - Structure-tree RoleMap resolution with cycle/depth protection and exhaustive
   child-position, alias, malformed-map, and structure-kind coverage.
+- Native JPEG pipeline covering sequential/progressive DCT, Huffman and
+  arithmetic entropy coding, lossless scans, sampling, IDCT and color output.
+- JPEG probing, frame/process validation, arithmetic-state tests, and a bridge
+  from the existing PDF `JpegStream` API with RGB/RGBA resizing.
 
 ### Changed
 
@@ -37,7 +41,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 711 VM tests and 41 Chrome tests.
+- Increased coverage to 728 VM tests and 41 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 
