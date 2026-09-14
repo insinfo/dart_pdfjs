@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
   malformed input repair, raw data, and entity-expansion safety.
 - PostScript Type 4 AST, parser, safe stack interpreter, expression-tree
   conversion, constant simplification, and reference-derived operator tests.
+- Reference cryptographic vectors for MD5, SHA-2, RC4, AES, and PDF 1.7/2.0
+  password validation and key derivation, plus explicit cipher key validation.
 
 ### Changed
 
@@ -29,7 +31,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 443 VM tests and 41 Chrome tests.
+- Increased coverage to 483 VM tests and 41 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 

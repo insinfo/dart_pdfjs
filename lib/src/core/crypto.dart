@@ -16,6 +16,9 @@ class ARCFourCipher {
   late final Uint8List s;
 
   ARCFourCipher(Uint8List key) {
+    if (key.isEmpty) {
+      throw ArgumentError.value(key, 'key', 'RC4 keys cannot be empty.');
+    }
     s = Uint8List(256);
     final keyLength = key.length;
 
@@ -1418,6 +1421,13 @@ class AES128Cipher extends AESBaseCipher {
   // dart format on
 
   AES128Cipher(Uint8List key) : super() {
+    if (key.length != 16) {
+      throw ArgumentError.value(
+        key.length,
+        'key.length',
+        'AES-128 requires exactly 16 key bytes.',
+      );
+    }
     _cyclesOfRepetition = 10;
     _keySize = 160;
     _key = _expandKey(key);
@@ -1458,6 +1468,13 @@ class AES128Cipher extends AESBaseCipher {
 
 class AES256Cipher extends AESBaseCipher {
   AES256Cipher(Uint8List key) : super() {
+    if (key.length != 32) {
+      throw ArgumentError.value(
+        key.length,
+        'key.length',
+        'AES-256 requires exactly 32 key bytes.',
+      );
+    }
     _cyclesOfRepetition = 14;
     _keySize = 224;
     _key = _expandKey(key);

@@ -237,5 +237,5 @@ e limpa o cache local `.dart_tool/test` antes de cada execução.
 - **Fase 6 (`core/` renderização e documento):** `colorspace.dart` 100% completo; `pattern.dart` 100% completo; `writer.dart` 100% concluído; `pdf_manager.dart` 100% concluído; `operator_list.dart` 100% concluído; `image_resizer.dart` 100% concluído; `image.dart` (`PDFImage`) 100% concluído; `document.dart` (`Page`, `PDFDocument`) 100% concluído; `evaluator.dart` e `annotation.dart` iniciados.
 - **Fase 7 (`core/` utilitários centrais):** `bidi.dart`, `intersector.dart`, `image_utils.dart`, `chunked_stream.dart`, `function.dart`, `default_appearance.dart`, `evaluator_preprocessor.dart`, `internal_viewer_utils.dart`, `postscript/lexer.dart` 100% concluídos.
 - **Fase 9 (`display/`):** factories DOM, objetos, imagens/texto XFA, transporte Fetch, seleção de backend e `text_layer.dart` concluídos; canvas e annotation layer permanecem em andamento.
-- **Testes Unitários:** **484 testes passando (443 VM + 41 Chrome, 100% sucesso)**.
+- **Testes Unitários:** **524 testes passando (483 VM + 41 Chrome, 100% sucesso)**.
 - **Análise Estática (`dart analyze`):** **0 issues**.
