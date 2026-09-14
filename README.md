@@ -5,8 +5,10 @@ The project targets web applications and uses `package:web` with
 `dart:js_interop`; deprecated `dart:html` APIs are intentionally not used.
 
 > This package is under active development. Simple PDF documents can be loaded
-> and rendered to a browser Canvas. Advanced fonts, images, transparency,
-> annotations, workers, and range streaming are still being expanded.
+> and rendered to a browser Canvas. Simple Type1/TrueType/Type0 fonts and
+> common PDF image color spaces and masks are supported. Transparency,
+> annotations, workers, advanced CID fonts, and range streaming are still
+> being expanded.
 
 ## Render a PDF in the browser
 

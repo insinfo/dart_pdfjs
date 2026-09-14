@@ -52,6 +52,63 @@ Uint8List _paintedPdf() {
   return Uint8List.fromList(latin1.encode(output.toString()));
 }
 
+Uint8List _imagePdf() {
+  const content = 'q 20 0 0 20 10 10 cm /Im0 Do Q';
+  final output = BytesBuilder();
+  final offsets = <int>[0];
+
+  void writeText(String value) => output.add(latin1.encode(value));
+  void object(int number, String body, [List<int>? streamBytes]) {
+    offsets.add(output.length);
+    writeText('$number 0 obj\n$body');
+    if (streamBytes != null) {
+      writeText('\nstream\n');
+      output.add(streamBytes);
+      writeText('\nendstream');
+    }
+    writeText('\nendobj\n');
+  }
+
+  writeText('%PDF-1.7\n');
+  object(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  object(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  object(
+    3,
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 50 50] '
+    '/Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>',
+  );
+  object(4, '<< /Length ${content.length} >>', latin1.encode(content));
+  object(
+    5,
+    '<< /Type /XObject /Subtype /Image /Width 2 /Height 2 '
+    '/ColorSpace /DeviceRGB /BitsPerComponent 8 /Length 12 >>',
+    const [
+      255,
+      0,
+      0,
+      0,
+      255,
+      0,
+      0,
+      0,
+      255,
+      255,
+      255,
+      255,
+    ],
+  );
+  final xrefOffset = output.length;
+  writeText('xref\n0 6\n0000000000 65535 f \n');
+  for (final offset in offsets.skip(1)) {
+    writeText('${offset.toString().padLeft(10, '0')} 00000 n \n');
+  }
+  writeText(
+    'trailer\n<< /Size 6 /Root 1 0 R >>\n'
+    'startxref\n$xrefOffset\n%%EOF\n',
+  );
+  return output.takeBytes();
+}
+
 void main() {
   test('CanvasPageRenderer paints with the viewport transformation', () {
     final canvas = web.document.createElement('canvas') as web.HTMLCanvasElement
@@ -121,6 +178,38 @@ void main() {
     expect(outside[1], 255);
     expect(outside[2], 255);
     expect(outside[3], 255);
+    await document.destroy();
+  });
+
+  test('decodes and renders an Image XObject from a real PDF', () async {
+    final document = await getDocument(_imagePdf()).promise;
+    final page = await document.getPage(1);
+    final viewport = page.getViewport(scale: 2);
+    final canvas = web.document.createElement('canvas') as web.HTMLCanvasElement
+      ..width = viewport.width.ceil()
+      ..height = viewport.height.ceil();
+    final context = canvas.getContext('2d') as web.CanvasRenderingContext2D;
+
+    final operatorList = await page.getOperatorList();
+    expect(operatorList.fnArray, contains(OPS.paintImageXObject));
+    final imageIndex = operatorList.fnArray.indexOf(OPS.paintImageXObject);
+    final payload = operatorList.argsArray[imageIndex][0] as Map;
+    expect(payload['width'], 2);
+    expect(payload['height'], 2);
+    expect(payload['kind'], ImageKind.rgba32bpp);
+
+    await page
+        .render(RenderParameters(
+          canvasContext: context,
+          viewport: viewport,
+        ))
+        .promise;
+    final colored = context.getImageData(30, 30, 1, 1).data.toDart;
+    expect(colored[3], 255);
+    expect(
+      colored[0] == 255 || colored[1] == 255 || colored[2] == 255,
+      isTrue,
+    );
     await document.destroy();
   });
 }

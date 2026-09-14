@@ -345,20 +345,25 @@ void main() {
     });
 
     test('registers image XObjects with width and height', () async {
-      final image = StringStream('pixel bytes')
+      final image = Stream(Uint8List.fromList(<int>[10, 20, 30]))
         ..dict = dictionary(<String, dynamic>{
           'Subtype': Name.get('Image'),
-          'Width': 17,
-          'Height': 9,
+          'Width': 1,
+          'Height': 1,
+          'BitsPerComponent': 8,
+          'ColorSpace': Name.get('DeviceRGB'),
         });
       final resources = dictionary(<String, dynamic>{
         'XObject': dictionary(<String, dynamic>{'Im1': image}),
       });
       final result = await evaluate('/Im1 Do', resources: resources);
-      expect(result.fnArray, <int>[OPS.dependency, OPS.paintImageXObject]);
-      expect(result.argsArray.last[0], startsWith('img_p2_'));
-      expect(result.argsArray.last[1], 17);
-      expect(result.argsArray.last[2], 9);
+      expect(result.fnArray, <int>[OPS.paintImageXObject]);
+      expect(result.argsArray.last.single['width'], 1);
+      expect(result.argsArray.last.single['height'], 1);
+      expect(
+        result.argsArray.last.single['data'],
+        orderedEquals(<int>[10, 20, 30, 255]),
+      );
     });
 
     test('preserves unresolved XObject operations', () async {

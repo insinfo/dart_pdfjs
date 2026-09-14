@@ -8,6 +8,8 @@ import 'dart:typed_data';
 import '../shared/util.dart';
 import 'base_stream.dart';
 import 'evaluator_preprocessor.dart';
+import 'font_translation.dart';
+import 'image_evaluator.dart';
 import 'operator_list.dart';
 import 'primitives.dart';
 import 'xref.dart';
@@ -69,6 +71,7 @@ class _TextState {
   List<double> textMatrix = <double>[1, 0, 0, 1, 0, 0];
   List<double> lineMatrix = <double>[1, 0, 0, 1, 0, 0];
   String fontName = '';
+  TranslatedFont? translatedFont;
   double fontSize = 0;
   double charSpacing = 0;
   double wordSpacing = 0;
@@ -116,8 +119,9 @@ class PartialEvaluator {
   final Map<String, dynamic> options;
 
   int _nextFontId = 1;
-  int _nextImageId = 1;
   final Map<Object, String> _fontIds = <Object, String>{};
+  final Map<Object, TranslatedFont> _translatedFonts =
+      <Object, TranslatedFont>{};
   final Set<Object> _activeForms = <Object>{};
 
   PartialEvaluator({
@@ -194,6 +198,7 @@ class PartialEvaluator {
         EvaluatorPreprocessor(contentStream, xref, stateManager);
     final operation = EvaluatorOperation();
     final timeSlot = TimeSlotManager();
+    TranslatedFont? currentFont;
 
     while (preprocessor.read(operation)) {
       await _ensureNotCancelled(executionContext);
@@ -202,7 +207,7 @@ class PartialEvaluator {
 
       switch (fn) {
         case OPS.setFont:
-          await handleSetFont(
+          currentFont = await handleSetFont(
             resourceDict,
             args,
             args.isNotEmpty ? args.first : null,
@@ -210,6 +215,26 @@ class PartialEvaluator {
             executionContext,
             stateManager.state,
           );
+          break;
+        case OPS.showText:
+        case OPS.nextLineShowText:
+          operatorList.addOp(fn, <dynamic>[
+            _translateTextOperand(args.isEmpty ? '' : args[0], currentFont),
+          ]);
+          break;
+        case OPS.showSpacedText:
+          operatorList.addOp(fn, <dynamic>[
+            _translateSpacedTextOperand(
+              args.isEmpty ? const <dynamic>[] : args[0],
+              currentFont,
+            ),
+          ]);
+          break;
+        case OPS.nextLineSetSpacingShowText:
+          if (args.length >= 3) {
+            args[2] = _translateTextOperand(args[2], currentFont);
+          }
+          operatorList.addOp(fn, args);
           break;
         case OPS.setGState:
           _handleSetGState(resourceDict, args, operatorList);
@@ -224,7 +249,7 @@ class PartialEvaluator {
           );
           break;
         case OPS.endInlineImage:
-          _handleInlineImage(args, operatorList);
+          await _handleInlineImage(args, operatorList, resourceDict);
           break;
         case OPS.beginInlineImage:
         case OPS.beginImageData:
@@ -344,17 +369,14 @@ class PartialEvaluator {
       return;
     }
     if (subtype is Name && subtype.name == 'Image') {
-      final identity = dict.objId ?? xObject;
-      final id = 'img_p${pageIndex}_${_nextImageId++}';
-      operatorList.addDependency(id);
+      final imageData = await ImageEvaluator.decode(
+        xref: xref,
+        resources: resources,
+        image: xObject,
+      );
       operatorList.addImageOps(
         OPS.paintImageXObject,
-        <dynamic>[
-          id,
-          (dict.get('Width') as num?)?.toInt() ?? 0,
-          (dict.get('Height') as num?)?.toInt() ?? 0,
-          identity,
-        ],
+        <dynamic>[imageData],
         null,
       );
       return;
@@ -401,30 +423,25 @@ class PartialEvaluator {
     return value.map((v) => (v as num).toDouble()).toList();
   }
 
-  void _handleInlineImage(List<dynamic> args, OperatorList operatorList) {
+  Future<void> _handleInlineImage(
+    List<dynamic> args,
+    OperatorList operatorList,
+    Dict resources,
+  ) async {
     if (args.isEmpty || args[0] is! BaseStream) {
       operatorList.addOp(OPS.paintInlineImageXObject, args);
       return;
     }
     final image = args[0] as BaseStream;
-    final dict = image.dict;
-    final width =
-        dict is Dict ? (dict.get('W', 'Width') as num?)?.toInt() ?? 0 : 0;
-    final height =
-        dict is Dict ? (dict.get('H', 'Height') as num?)?.toInt() ?? 0 : 0;
-    image.reset();
-    final bytes = image.getBytes();
+    final imageData = await ImageEvaluator.decode(
+      xref: xref,
+      resources: resources,
+      image: image,
+      isInline: true,
+    );
     operatorList.addImageOps(
       OPS.paintInlineImageXObject,
-      <dynamic>[
-        <String, dynamic>{
-          'width': width,
-          'height': height,
-          'data': Uint8List.fromList(bytes),
-          'raw': true,
-          'dict': dict,
-        },
-      ],
+      <dynamic>[imageData],
       null,
     );
   }
@@ -454,6 +471,11 @@ class PartialEvaluator {
           state.fontName =
               args[0] is Name ? (args[0] as Name).name : args[0].toString();
           state.fontSize = (args[1] as num).toDouble();
+          state.translatedFont = _translateFontResource(
+            resourceDict,
+            args[0],
+            'text_${state.fontName}',
+          );
           styles.putIfAbsent(
             state.fontName,
             () => _fontStyle(resourceDict, args[0]),
@@ -533,12 +555,26 @@ class PartialEvaluator {
   ) {
     final buffer = StringBuffer();
     double adjustment = 0;
+    double glyphWidth = 0;
+    void appendText(String value) {
+      final font = state.translatedFont;
+      if (font == null) {
+        buffer.write(value);
+        glyphWidth += value.length * 500;
+        return;
+      }
+      for (final glyph in font.font.charsToGlyphs(value)) {
+        buffer.write(glyph.unicode);
+        glyphWidth += glyph.width.toDouble();
+      }
+    }
+
     if (source is String) {
-      buffer.write(source);
+      appendText(source);
     } else if (source is List) {
       for (final value in source) {
         if (value is String) {
-          buffer.write(value);
+          appendText(value);
         } else if (value is num) {
           adjustment +=
               -value.toDouble() / 1000 * state.fontSize * state.hScale;
@@ -549,7 +585,7 @@ class PartialEvaluator {
     final spaces = text.codeUnits.where((c) => c == 0x20).length;
     final width = math.max(
       0,
-      text.length * state.fontSize * 0.5 * state.hScale +
+      glyphWidth / 1000 * state.fontSize * state.hScale +
           math.max(0, text.length - 1) * state.charSpacing +
           spaces * state.wordSpacing +
           adjustment,
@@ -574,7 +610,7 @@ class PartialEvaluator {
     state.textMatrix[5] += width * state.textMatrix[1];
   }
 
-  Future<void> handleSetFont(
+  Future<TranslatedFont?> handleSetFont(
     dynamic resources,
     List<dynamic> fontArgs,
     dynamic fontRef,
@@ -584,7 +620,7 @@ class PartialEvaluator {
     dynamic fallbackFontDict,
     dynamic cssFontInfo,
   ]) async {
-    if (fontArgs.length < 2) return;
+    if (fontArgs.length < 2) return null;
     final dict = resources is Dict ? resources : Dict(xref);
     final font = fallbackFontDict ?? _resource(dict, 'Font', fontRef);
     final identity = font is Dict ? (font.objId ?? font) : (font ?? fontRef);
@@ -592,5 +628,59 @@ class PartialEvaluator {
         identity as Object, () => 'g_p${pageIndex}_f${_nextFontId++}');
     operatorList.addDependency(id);
     operatorList.addOp(OPS.setFont, <dynamic>[id, fontArgs[1]]);
+    if (font is! Dict) return null;
+    final translated = _translatedFonts.putIfAbsent(
+      identity,
+      () => FontTranslator(options: options).translate(font, id),
+    );
+    _publishFont(id, translated);
+    return translated;
+  }
+
+  TranslatedFont? _translateFontResource(
+    Dict resources,
+    dynamic fontRef,
+    String loadedName,
+  ) {
+    final font = _resource(resources, 'Font', fontRef);
+    if (font is! Dict) return null;
+    return FontTranslator(options: options).translate(font, loadedName);
+  }
+
+  dynamic _translateTextOperand(dynamic value, TranslatedFont? font) {
+    if (font == null || value is! String) return value;
+    return font.glyphs(value);
+  }
+
+  List<dynamic> _translateSpacedTextOperand(
+    dynamic value,
+    TranslatedFont? font,
+  ) {
+    if (value is! List || font == null) {
+      return value is List ? List<dynamic>.from(value) : <dynamic>[value];
+    }
+    final result = <dynamic>[];
+    for (final entry in value) {
+      if (entry is String) {
+        result.addAll(font.glyphs(entry));
+      } else {
+        result.add(entry);
+      }
+    }
+    return result;
+  }
+
+  void _publishFont(String id, TranslatedFont translated) {
+    if (handler == null) return;
+    final data = translated.exportData();
+    try {
+      handler.send('commonobj', <dynamic>[id, 'Font', data]);
+    } on NoSuchMethodError {
+      try {
+        handler(id, data);
+      } on NoSuchMethodError {
+        // Direct evaluator users consume glyph maps without a worker channel.
+      }
+    }
   }
 }

@@ -45,6 +45,14 @@ All notable changes to this project will be documented in this file.
   graphics, text, fonts, ExtGState, Form/Image XObjects, and inline images.
 - End-to-end browser coverage that parses and paints a real one-page PDF and
   verifies the rendered Canvas pixels.
+- Font translation for simple Type1/TrueType fonts and basic Type0 fonts,
+  including standard encodings, Differences, widths, descriptors, embedded
+  font streams, ToUnicode `bfchar`/`bfrange`, and display-ready glyph records.
+- Image XObject and inline-image decoding through `PDFImage`, producing RGBA
+  payloads for RGB, grayscale, CMYK, Decode arrays, SMask, color-key masks,
+  and one-bit image masks.
+- End-to-end browser coverage for parsing, decoding, and painting an embedded
+  Image XObject from a real PDF.
 
 ### Changed
 
@@ -55,7 +63,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 860 VM tests and 64 Chrome tests.
+- Increased coverage to 895 VM tests and 65 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 
