@@ -8,6 +8,7 @@ import '../shared/math_clamp.dart';
 import '../shared/util.dart';
 import 'base_stream.dart';
 import 'image_utils.dart';
+import 'postscript/evaluator.dart' as postscript;
 import 'primitives.dart';
 
 abstract class FunctionType {
@@ -78,7 +79,9 @@ List<num>? _toNumberArray(dynamic arr) {
   if (arr is! List) {
     return null;
   }
-  return arr.map((x) => x is num ? x : num.tryParse(x.toString()) ?? 0).toList();
+  return arr
+      .map((x) => x is num ? x : num.tryParse(x.toString()) ?? 0)
+      .toList();
 }
 
 class PDFFunction {
@@ -175,9 +178,10 @@ class PDFFunction {
     final size = _toNumberArray(dict.getArray('Size'))!;
     final bps = (dict.get('BitsPerSample') as num).toInt();
 
-    final List<num> encode = _toNumberArray(dict.getArray('Encode')) ?? [
-      for (var i = 0; i < inputSize; ++i) ...[0, size[i] - 1],
-    ];
+    final List<num> encode = _toNumberArray(dict.getArray('Encode')) ??
+        [
+          for (var i = 0; i < inputSize; ++i) ...[0, size[i] - 1],
+        ];
 
     final decode = _toNumberArray(dict.getArray('Decode')) ?? range;
     final samples = getSampleArray(size, outputSize, bps, fn);
@@ -233,8 +237,7 @@ class PDFFunction {
         }
 
         rj = interpolate(rj, 0, 1, decode[2 * j], decode[2 * j + 1]);
-        dest[destOffset + j] =
-            mathClamp(rj, range[2 * j], range[2 * j + 1]);
+        dest[destOffset + j] = mathClamp(rj, range[2 * j], range[2 * j + 1]);
       }
     };
   }
@@ -327,10 +330,27 @@ class PDFFunction {
     }
 
     final psCode = fn is BaseStream ? fn.getString() : '';
-    return _buildPostScriptEvaluator(psCode, domain, range);
+    final evaluator = postscript.buildPostScriptFunction(
+      source: psCode,
+      domain: domain.map((value) => value.toDouble()).toList(),
+      range: range.map((value) => value.toDouble()).toList(),
+    );
+    final inputCount = domain.length ~/ 2;
+    final outputCount = range.length ~/ 2;
+    return (src, srcOffset, dest, destOffset) {
+      final output = evaluator([
+        for (var i = 0; i < inputCount; i++) src[srcOffset + i].toDouble(),
+      ]);
+      for (var i = 0; i < outputCount; i++) {
+        dest[destOffset + i] = output[i];
+      }
+    };
   }
 }
 
+// Kept temporarily as a compatibility baseline while the new AST evaluator
+// is exercised against the full reference suite.
+// ignore: unused_element
 PDFFunctionEvaluator _buildPostScriptEvaluator(
   String code,
   List<num> domain,
@@ -382,7 +402,8 @@ PDFFunctionEvaluator _buildPostScriptEvaluator(
 
     // Push clamped inputs
     for (var i = 0; i < inputCount; i++) {
-      final val = mathClamp(src[srcOffset + i], domain[2 * i], domain[2 * i + 1]);
+      final val =
+          mathClamp(src[srcOffset + i], domain[2 * i], domain[2 * i + 1]);
       stack.add(val.toDouble());
     }
 
@@ -444,7 +465,8 @@ PDFFunctionEvaluator _buildPostScriptEvaluator(
             stack.add(a);
             break;
           case 'log':
-            final a = math.log((stack.removeLast() as num).toDouble()) / math.ln10;
+            final a =
+                math.log((stack.removeLast() as num).toDouble()) / math.ln10;
             stack.add(a);
             break;
           case 'add':
@@ -619,8 +641,7 @@ PDFFunctionEvaluator _buildPostScriptEvaluator(
     // Populate outputs clamped to range
     for (var i = outputCount - 1; i >= 0; i--) {
       final val = stack.isNotEmpty ? (stack.removeLast() as num) : 0.0;
-      dest[destOffset + i] =
-          mathClamp(val, range[2 * i], range[2 * i + 1]);
+      dest[destOffset + i] = mathClamp(val, range[2 * i], range[2 * i + 1]);
     }
   };
 }
