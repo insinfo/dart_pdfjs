@@ -1,7 +1,9 @@
 name: pdfjs
-description: 
+description: A pure Dart port of Mozilla PDF.js for web applications using package:web.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/insinfo/dart_pdfjs
+issue_tracker: https://github.com/insinfo/dart_pdfjs/issues
+license: Apache-2.0
 
 environment:
   sdk: ^3.6.0

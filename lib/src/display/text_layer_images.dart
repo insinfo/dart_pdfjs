@@ -1,6 +1,7 @@
 // Copyright 2026 Mozilla Foundation
 // Ported to Dart, 2026. Apache License 2.0.
 
+import 'dart:js_interop';
 import 'dart:math' as math;
 
 import 'package:web/web.dart' as web;
@@ -14,10 +15,12 @@ String _percentage(double value) {
 /// Manages placeholder canvas elements that, when right-clicked on,
 /// are populated with the corresponding image extracted from the PDF page.
 class TextLayerImages {
+  static web.HTMLCanvasElement? _activeImage;
+
   final List<double> _coordinates;
   final Map<web.HTMLCanvasElement, Map<String, dynamic>> _coordinatesByElement =
       {};
-  final Function? getPageCanvas;
+  final web.HTMLCanvasElement Function()? getPageCanvas;
   final double _minSize;
   final double _pageWidth;
   final double _pageHeight;
@@ -45,6 +48,60 @@ class TextLayerImages {
       }
     }
 
+    container.addEventListener(
+      'contextmenu',
+      ((web.Event event) {
+        final target = event.target;
+        if (target is! web.HTMLCanvasElement) {
+          return;
+        }
+        final coords = _coordinatesByElement[target];
+        if (coords == null || identical(_activeImage, target)) {
+          return;
+        }
+
+        final activeImage = _activeImage;
+        if (activeImage != null) {
+          activeImage.width = 0;
+          activeImage.height = 0;
+        }
+        _activeImage = target;
+
+        final pageCanvas = getPageCanvas?.call();
+        if (pageCanvas == null) {
+          return;
+        }
+        final x1 = coords['x1'] as double;
+        final y1 = coords['y1'] as double;
+        final width = coords['width'] as double;
+        final height = coords['height'] as double;
+        final inverseTransform = coords['inverseTransform'] as List<double>;
+        final imageX1 = (x1 * pageCanvas.width).ceil();
+        final imageY1 = (y1 * pageCanvas.height).ceil();
+        final imageX2 = ((x1 + width / _pageWidth) * pageCanvas.width).floor();
+        final imageY2 =
+            ((y1 + height / _pageHeight) * pageCanvas.height).floor();
+
+        target.width = imageX2 - imageX1;
+        target.height = imageY2 - imageY1;
+        final context =
+            target.getContext('2d') as web.CanvasRenderingContext2D?;
+        if (context == null) {
+          return;
+        }
+        context.setTransform(
+          inverseTransform[0].toJS,
+          inverseTransform[1],
+          inverseTransform[2],
+          inverseTransform[3],
+          inverseTransform[4],
+          inverseTransform[5],
+        );
+        context.translate(-imageX1, -imageY1);
+        context.drawImage(pageCanvas, 0, 0);
+      }).toJS,
+    );
+
     return container;
   }
 
@@ -56,12 +113,10 @@ class TextLayerImages {
     final x3 = coords[4];
     final y3 = coords[5];
 
-    final width = math.sqrt(
-        math.pow((x3 - x1) * _pageWidth, 2) +
-            math.pow((y3 - y1) * _pageHeight, 2));
-    final height = math.sqrt(
-        math.pow((x2 - x1) * _pageWidth, 2) +
-            math.pow((y2 - y1) * _pageHeight, 2));
+    final width = math.sqrt(math.pow((x3 - x1) * _pageWidth, 2) +
+        math.pow((y3 - y1) * _pageHeight, 2));
+    final height = math.sqrt(math.pow((x2 - x1) * _pageWidth, 2) +
+        math.pow((y2 - y1) * _pageHeight, 2));
 
     if (width < _minSize || height < _minSize) {
       return null;

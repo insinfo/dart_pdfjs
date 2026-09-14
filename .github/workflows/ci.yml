@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Analyze
+        run: dart analyze --fatal-infos
+
+      - name: Run VM tests
+        shell: pwsh
+        run: ./tool/run_tests.ps1
+
+      - name: Run Chrome tests
+        shell: pwsh
+        run: >-
+          ./tool/run_tests.ps1
+          test/display/canvas_factory_test.dart
+          test/display/svg_factory_test.dart
+          test/display/binary_data_factory_test.dart
+          test/display/text_layer_images_test.dart
+          -p chrome

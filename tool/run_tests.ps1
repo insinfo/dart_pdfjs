@@ -1,13 +1,20 @@
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$testCache = [System.IO.Path]::GetFullPath((Join-Path $projectRoot '.dart_tool\test'))
+$dartToolRoot = Join-Path $projectRoot '.dart_tool'
+$testCache = [System.IO.Path]::GetFullPath((Join-Path $dartToolRoot 'test'))
 $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+$pathSeparators = [char[]]@(
+    [System.IO.Path]::DirectorySeparatorChar,
+    [System.IO.Path]::AltDirectorySeparatorChar
+)
+$normalizedTempRoot = $tempRoot.TrimEnd($pathSeparators)
+$projectPrefix = $projectRoot.TrimEnd($pathSeparators) + [System.IO.Path]::DirectorySeparatorChar
 
 function Remove-DartTestArtifacts {
     $removedBytes = [long] 0
 
     if (Test-Path -LiteralPath $testCache) {
-        if (-not $testCache.StartsWith($projectRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        if (-not $testCache.StartsWith($projectPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
             throw "Refusing to clean unexpected test cache: $testCache"
         }
         Get-ChildItem -LiteralPath $testCache -Recurse -File -Force -ErrorAction SilentlyContinue |
@@ -18,7 +25,7 @@ function Remove-DartTestArtifacts {
     Get-ChildItem -LiteralPath $tempRoot -Directory -Filter 'dart_test.kernel.*' -Force -ErrorAction SilentlyContinue |
         ForEach-Object {
             $target = [System.IO.Path]::GetFullPath($_.FullName)
-            $validParent = [System.IO.Path]::GetDirectoryName($target) -eq $tempRoot.TrimEnd('\')
+            $validParent = [System.IO.Path]::GetDirectoryName($target) -eq $normalizedTempRoot
             $validName = [System.IO.Path]::GetFileName($target).StartsWith('dart_test.kernel.')
             if (-not ($validParent -and $validName)) {
                 throw "Refusing to clean unexpected temporary path: $target"
