@@ -31,6 +31,11 @@ All notable changes to this project will be documented in this file.
   arithmetic entropy coding, lossless scans, sampling, IDCT and color output.
 - JPEG probing, frame/process validation, arithmetic-state tests, and a bridge
   from the existing PDF `JpegStream` API with RGB/RGBA resizing.
+- Complete Compact Font Format reader for headers, INDEX and DICT data,
+  private dictionaries, charsets, encodings, FDSelect tables, Type 2
+  charstrings, subroutines, widths, SEAC analysis, and CID font dictionaries.
+- Reference-derived CFF parsing, malformed-input, compiler round-trip, charset,
+  encoding, FDSelect, and Type 2 charstring tests.
 
 ### Changed
 
@@ -41,7 +46,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 728 VM tests and 41 Chrome tests.
+- Increased coverage to 808 VM tests and 41 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 
