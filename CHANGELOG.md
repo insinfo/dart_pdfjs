@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
   rendering implementations and tests.
 - Touch gesture management with pinch thresholds, stable touch ordering,
   callback lifecycle, DOM listener cleanup, and browser coverage.
+- Non-streaming network transport with complete-document reads, byte ranges,
+  progress reporting, cancellation, and response metadata.
+- Reference-derived XMP metadata coverage for scalar values, RDF collections,
+  malformed input repair, raw data, and entity-expansion safety.
 
 ### Changed
 
@@ -23,7 +27,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 332 VM tests and 34 Chrome tests.
+- Increased coverage to 339 VM tests and 41 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 
