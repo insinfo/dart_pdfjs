@@ -1,7 +1,12 @@
 // Copyright 2015 Mozilla Foundation
 // Ported to Dart, 2026. Apache License 2.0.
 
+import 'dart:js_interop';
 import 'dart:typed_data';
+
+import 'package:web/web.dart' as web;
+
+import '../shared/util.dart' show stringToBytes;
 
 abstract class BaseBinaryDataFactory {
   static const Map<String, String> _errorStr = {
@@ -46,7 +51,8 @@ abstract class BaseBinaryDataFactory {
     try {
       return await _fetch(url, kind);
     } catch (_) {
-      throw Exception('Unable to load ${_errorStr[kind] ?? kind} data at: $url');
+      throw Exception(
+          'Unable to load ${_errorStr[kind] ?? kind} data at: $url');
     }
   }
 
@@ -62,7 +68,17 @@ class DOMBinaryDataFactory extends BaseBinaryDataFactory {
 
   @override
   Future<Uint8List> _fetch(String url, String kind) async {
-    // Implementação pura Dart com fallback
-    return Uint8List(0);
+    final response = await web.window.fetch(url.toJS).toDart;
+    if (!response.ok) {
+      throw Exception(response.statusText);
+    }
+
+    if (kind == 'cMapUrl' && !url.endsWith('.bcmap')) {
+      final text = (await response.text().toDart).toDart;
+      return stringToBytes(text);
+    }
+
+    final buffer = await response.arrayBuffer().toDart;
+    return Uint8List.fromList(buffer.toDart.asUint8List());
   }
 }
