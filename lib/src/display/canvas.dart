@@ -63,6 +63,23 @@ class CanvasExtraState {
       );
 }
 
+class _CanvasGroupState {
+  final web.CanvasRenderingContext2D parent;
+  final web.HTMLCanvasElement canvas;
+  final double offsetX;
+  final double offsetY;
+  final double alpha;
+  final String composite;
+
+  const _CanvasGroupState(this.parent, this.canvas, this.offsetX, this.offsetY,
+      this.alpha, this.composite);
+}
+
+class _AnnotationState {
+  final int stackDepth;
+  const _AnnotationState(this.stackDepth);
+}
+
 /// Executes PDF.js operator lists against a browser Canvas 2D context.
 ///
 /// This is intentionally the small, dependable rendering core. It covers the
@@ -77,6 +94,8 @@ class CanvasGraphics {
   int? _pendingClip;
   double _currentX = 0;
   double _currentY = 0;
+  final List<_CanvasGroupState> _groupStack = <_CanvasGroupState>[];
+  final List<_AnnotationState> _annotationStack = <_AnnotationState>[];
 
   CanvasGraphics(
     this.ctx, {
@@ -261,8 +280,24 @@ class CanvasGraphics {
       case OPS.paintImageXObject:
       case OPS.paintInlineImageXObject:
         paintImageXObject(a[0]);
+      case OPS.paintImageXObjectRepeat:
+        paintImageXObjectRepeat(a);
+      case OPS.paintImageMaskXObject:
+        paintImageMaskXObject(a[0]);
+      case OPS.paintImageMaskXObjectRepeat:
+        paintImageMaskXObjectRepeat(a);
+      case OPS.paintImageMaskXObjectGroup:
+        paintImageMaskXObjectGroup(a[0]);
       case OPS.paintSolidColorImageMask:
         ctx.fillRect(0, 0, 1, 1);
+      case OPS.beginGroup:
+        beginGroup(a.isEmpty ? const <String, dynamic>{} : a.last);
+      case OPS.endGroup:
+        endGroup(a.isEmpty ? const <String, dynamic>{} : a.last);
+      case OPS.beginAnnotation:
+        beginAnnotation(a);
+      case OPS.endAnnotation:
+        endAnnotation();
       case OPS.paintFormXObjectBegin:
         save();
         if (a.isNotEmpty && a[0] is List) transform(a[0]);
@@ -600,6 +635,193 @@ class CanvasGraphics {
     var advance = measured + current.charSpacing;
     if (text == ' ') advance += current.wordSpacing;
     current.x += advance;
+  }
+
+  /// Starts an isolated transparency group on a scratch canvas.
+  ///
+  /// PDF.js calculates a device-space bounding box and redirects all drawing
+  /// until [endGroup]. This port follows the same model and deliberately caps
+  /// the scratch surface to the destination canvas, preventing malformed PDFs
+  /// from allocating an unbounded bitmap.
+  void beginGroup(dynamic group) {
+    final map = group is Map ? group : const <String, dynamic>{};
+    final bbox = map['bbox'] is Iterable
+        ? List<dynamic>.from(map['bbox'] as Iterable)
+        : <dynamic>[0, 0, ctx.canvas.width, ctx.canvas.height];
+    var x = bbox.length > 0 ? _number(bbox[0]).floor() : 0;
+    var y = bbox.length > 1 ? _number(bbox[1]).floor() : 0;
+    var width =
+        bbox.length > 2 ? (_number(bbox[2]) - x).ceil() : ctx.canvas.width;
+    var height =
+        bbox.length > 3 ? (_number(bbox[3]) - y).ceil() : ctx.canvas.height;
+    x = x.clamp(0, ctx.canvas.width);
+    y = y.clamp(0, ctx.canvas.height);
+    width = width.clamp(1, math.max(1, ctx.canvas.width - x));
+    height = height.clamp(1, math.max(1, ctx.canvas.height - y));
+
+    final scratch =
+        web.document.createElement('canvas') as web.HTMLCanvasElement;
+    scratch.width = width;
+    scratch.height = height;
+    final scratchCtx =
+        scratch.getContext('2d') as web.CanvasRenderingContext2D?;
+    if (scratchCtx == null) return;
+    final alpha = map['alpha'] is num
+        ? _number(map['alpha']).clamp(0, 1).toDouble()
+        : ctx.globalAlpha;
+    final composite = map['blendMode'] == null
+        ? ctx.globalCompositeOperation
+        : _blendMode(map['blendMode'].toString());
+    _groupStack.add(_CanvasGroupState(
+        ctx, scratch, x.toDouble(), y.toDouble(), alpha, composite));
+    ctx = scratchCtx;
+    ctx.translate(-x.toDouble(), -y.toDouble());
+    if (map['matrix'] is List) _transformList(map['matrix'] as List);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /// Composites the current transparency group into its parent surface.
+  void endGroup(dynamic group) {
+    if (_groupStack.isEmpty) return;
+    final state = _groupStack.removeLast();
+    ctx = state.parent;
+    ctx.save();
+    ctx.resetTransform();
+    ctx.globalAlpha = state.alpha;
+    ctx.globalCompositeOperation = state.composite;
+    ctx.drawImage(state.canvas, state.offsetX, state.offsetY);
+    ctx.restore();
+  }
+
+  /// Establishes the annotation appearance transform and rectangular clip.
+  void beginAnnotation(List<dynamic> args) {
+    final before = _stateStack.length;
+    save();
+    _annotationStack.add(_AnnotationState(before));
+    // Arguments are id, rect, transform, matrix, hasOwnCanvas in PDF.js.
+    final rect = args.length > 1 && args[1] is Iterable
+        ? List<dynamic>.from(args[1] as Iterable)
+        : const <dynamic>[];
+    final transformValues =
+        args.length > 2 && args[2] is List ? args[2] as List<dynamic> : null;
+    final matrix =
+        args.length > 3 && args[3] is List ? args[3] as List<dynamic> : null;
+    if (transformValues != null) _transformList(transformValues);
+    if (matrix != null) _transformList(matrix);
+    if (rect.length >= 4) {
+      final x0 = math.min(_number(rect[0]), _number(rect[2]));
+      final y0 = math.min(_number(rect[1]), _number(rect[3]));
+      final x1 = math.max(_number(rect[0]), _number(rect[2]));
+      final y1 = math.max(_number(rect[1]), _number(rect[3]));
+      ctx.beginPath();
+      ctx.rect(x0, y0, x1 - x0, y1 - y0);
+      ctx.clip();
+      ctx.beginPath();
+    }
+  }
+
+  void endAnnotation() {
+    if (_annotationStack.isEmpty) return;
+    final state = _annotationStack.removeLast();
+    while (_stateStack.length > state.stackDepth) restore();
+  }
+
+  dynamic _resolveObject(dynamic source) {
+    if (source is! String) return source;
+    if (objs.has(source)) return objs.get(source);
+    if (commonObjs.has(source)) return commonObjs.get(source);
+    return null;
+  }
+
+  /// Paints a one-bit stencil using the current fill style.
+  void paintImageMaskXObject(dynamic source) {
+    final image = _resolveObject(source);
+    if (image == null) return;
+    if (image is web.CanvasImageSource) {
+      _drawUnitImage(image);
+      return;
+    }
+    if (image is! Map) return;
+    final width = (image['width'] as num?)?.toInt() ?? 0;
+    final height = (image['height'] as num?)?.toInt() ?? 0;
+    final raw = image['data'];
+    if (width <= 0 || height <= 0 || raw is! Iterable<int>) return;
+    final bytes = Uint8List.fromList(raw.toList());
+    final inverse = image['inverseDecode'] == true;
+    final rgba = Uint8ClampedList(width * height * 4);
+    final rowBytes = (width + 7) >> 3;
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        final byteIndex = y * rowBytes + (x >> 3);
+        final bit = byteIndex < bytes.length
+            ? (bytes[byteIndex] >> (7 - (x & 7))) & 1
+            : 0;
+        final visible = inverse ? bit == 0 : bit != 0;
+        rgba[(y * width + x) * 4 + 3] = visible ? 255 : 0;
+      }
+    }
+    final maskCanvas =
+        web.document.createElement('canvas') as web.HTMLCanvasElement;
+    maskCanvas.width = width;
+    maskCanvas.height = height;
+    final maskCtx =
+        maskCanvas.getContext('2d') as web.CanvasRenderingContext2D?;
+    if (maskCtx == null) return;
+    final data = maskCtx.createImageData(width.toJS, height);
+    data.data.toDart.setAll(0, rgba);
+    maskCtx.putImageData(data, 0, 0);
+    maskCtx.globalCompositeOperation = 'source-in';
+    maskCtx.fillStyle = ctx.fillStyle;
+    maskCtx.fillRect(0, 0, width.toDouble(), height.toDouble());
+    _drawUnitImage(maskCanvas);
+  }
+
+  void paintImageMaskXObjectRepeat(List<dynamic> args) {
+    if (args.isEmpty) return;
+    final image = args[0];
+    final scaleX = args.length > 1 ? _number(args[1]) : 1.0;
+    final scaleY = args.length > 2 ? _number(args[2]) : 1.0;
+    final positions = args.length > 3 && args[3] is Iterable
+        ? List<dynamic>.from(args[3] as Iterable)
+        : const <dynamic>[];
+    for (var i = 0; i + 1 < positions.length; i += 2) {
+      ctx.save();
+      ctx.transform(scaleX, 0, 0, scaleY, _number(positions[i]),
+          _number(positions[i + 1]));
+      paintImageMaskXObject(image);
+      ctx.restore();
+    }
+  }
+
+  void paintImageMaskXObjectGroup(dynamic images) {
+    if (images is! Iterable) return;
+    for (final entry in images) {
+      if (entry is! Map) continue;
+      ctx.save();
+      if (entry['transform'] is List) {
+        _transformList(entry['transform'] as List);
+      }
+      paintImageMaskXObject(entry);
+      ctx.restore();
+    }
+  }
+
+  void paintImageXObjectRepeat(List<dynamic> args) {
+    if (args.isEmpty) return;
+    final image = args[0];
+    final scaleX = args.length > 1 ? _number(args[1]) : 1.0;
+    final scaleY = args.length > 2 ? _number(args[2]) : 1.0;
+    final positions = args.length > 3 && args[3] is Iterable
+        ? List<dynamic>.from(args[3] as Iterable)
+        : const <dynamic>[];
+    for (var i = 0; i + 1 < positions.length; i += 2) {
+      ctx.save();
+      ctx.transform(scaleX, 0, 0, scaleY, _number(positions[i]),
+          _number(positions[i + 1]));
+      paintImageXObject(image);
+      ctx.restore();
+    }
   }
 
   void paintImageXObject(dynamic source) {

@@ -53,6 +53,15 @@ All notable changes to this project will be documented in this file.
   and one-bit image masks.
 - End-to-end browser coverage for parsing, decoding, and painting an embedded
   Image XObject from a real PDF.
+- Canvas transparency groups with isolated off-screen compositing, alpha,
+  blend modes, nested groups, annotation clipping, image-mask and image-repeat
+  operators, and fill/stroke/invisible text rendering modes.
+- Browser annotation layer for links, notes, popups, markup geometry, file
+  attachments, and text/button/choice widgets synchronized with
+  `AnnotationStorage`.
+- Local worker document protocol with setup/factory injection, recovery/XFA
+  loading, page/catalog/document actions, operator/text streaming entrypoints,
+  task tracking, cleanup, and idempotent termination.
 
 ### Changed
 
@@ -63,7 +72,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 895 VM tests and 65 Chrome tests.
+- Increased coverage to 922 VM tests and 90 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 

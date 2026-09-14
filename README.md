@@ -6,9 +6,11 @@ The project targets web applications and uses `package:web` with
 
 > This package is under active development. Simple PDF documents can be loaded
 > and rendered to a browser Canvas. Simple Type1/TrueType/Type0 fonts and
-> common PDF image color spaces and masks are supported. Transparency,
-> annotations, workers, advanced CID fonts, and range streaming are still
-> being expanded.
+> common PDF image color spaces and masks are supported. The Canvas backend
+> includes isolated transparency groups and image masks, and a browser
+> annotation layer covers common links, markup, popups, and form widgets.
+> Advanced CID fonts, full soft masks, dedicated web workers, and range
+> streaming are still being expanded.
 
 ## Render a PDF in the browser
 
