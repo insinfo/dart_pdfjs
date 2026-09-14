@@ -20,6 +20,8 @@ All notable changes to this project will be documented in this file.
 - Added lifecycle cleanup for bitmap resources held by `PDFObjects`.
 - Added HTTP fetch streaming, range requests, cancellation, progress reporting,
   response metadata, and network-backend selection.
+- Added the DOM text-layer rendering pipeline, including marked content,
+  geometry, font layout, scaling, rotation updates, and cancellation.
 - Increased coverage to 332 VM tests and 19 Chrome tests.
 
 ## [1.0.0] - 2026-09-14

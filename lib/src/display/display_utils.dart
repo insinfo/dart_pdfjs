@@ -686,8 +686,7 @@ void stopEvent(dynamic evt) {
 
 /// Set the dimensions of a layer element based on the viewport.
 void setLayerDimensions(dynamic container, PageViewport viewport) {
-  // Set container dimensions to match the viewport.
-  // In Dart web context, this would set CSS properties.
+  // DOM-specific callers apply these values through package:web.
 }
 
 /// Get the current transform from a canvas context.
