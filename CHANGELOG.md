@@ -1,4 +1,3 @@
-
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -10,8 +9,10 @@ All notable changes to this project will be documented in this file.
 - GitHub Actions CI for static analysis, VM tests, and Chrome tests.
 - Safe PowerShell test runner that removes generated Dart test artifacts.
 - Project README, license, package metadata, and porting roadmap.
-- DOM canvas, SVG, binary-data factory, and text-layer image implementations
-  and tests.
+- DOM canvas, SVG, binary-data factory, text-layer image, and text-layer
+  rendering implementations and tests.
+- Touch gesture management with pinch thresholds, stable touch ordering,
+  callback lifecycle, DOM listener cleanup, and browser coverage.
 
 ### Changed
 
@@ -22,7 +23,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 332 VM tests and 19 Chrome tests.
+- Increased coverage to 332 VM tests and 34 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 

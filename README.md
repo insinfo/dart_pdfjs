@@ -37,7 +37,8 @@ folder after every run and clears `.dart_tool/test` before the next run.
   test/display/binary_data_factory_test.dart `
   test/display/text_layer_images_test.dart `
   test/display/fetch_stream_test.dart `
-  test/display/text_layer_test.dart -p chrome
+  test/display/text_layer_test.dart `
+  test/display/touch_manager_test.dart -p chrome
 ```
 
 The detailed porting status and conversion rules are tracked in
