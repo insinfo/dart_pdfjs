@@ -10,6 +10,38 @@ $pathSeparators = [char[]]@(
 $normalizedTempRoot = $tempRoot.TrimEnd($pathSeparators)
 $projectPrefix = $projectRoot.TrimEnd($pathSeparators) + [System.IO.Path]::DirectorySeparatorChar
 
+function Remove-ArtifactDirectory {
+    param(
+        [Parameter(Mandatory = $true)][string] $LiteralPath,
+        [int] $MaxAttempts = 12
+    )
+
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        if (-not (Test-Path -LiteralPath $LiteralPath)) {
+            return $true
+        }
+        try {
+            Remove-Item -LiteralPath $LiteralPath -Recurse -Force -ErrorAction Stop
+            return $true
+        }
+        catch [System.IO.IOException] {
+            if ($attempt -lt $MaxAttempts) {
+                Start-Sleep -Milliseconds ([math]::Min(100 * $attempt, 750))
+                continue
+            }
+        }
+        catch [System.UnauthorizedAccessException] {
+            if ($attempt -lt $MaxAttempts) {
+                Start-Sleep -Milliseconds ([math]::Min(100 * $attempt, 750))
+                continue
+            }
+        }
+    }
+
+    Write-Warning "Deferred cleanup of locked Dart test artifact: $LiteralPath"
+    return $false
+}
+
 function Remove-DartTestArtifacts {
     param([bool] $IncludeProjectCache = $false)
 
@@ -21,7 +53,7 @@ function Remove-DartTestArtifacts {
         }
         Get-ChildItem -LiteralPath $testCache -Recurse -File -Force -ErrorAction SilentlyContinue |
             ForEach-Object { $removedBytes += $_.Length }
-        Remove-Item -LiteralPath $testCache -Recurse -Force
+        [void](Remove-ArtifactDirectory -LiteralPath $testCache)
     }
 
     Get-ChildItem -LiteralPath $tempRoot -Directory -Filter 'dart_test.kernel.*' -Force -ErrorAction SilentlyContinue |
@@ -34,7 +66,7 @@ function Remove-DartTestArtifacts {
             }
             Get-ChildItem -LiteralPath $target -Recurse -File -Force -ErrorAction SilentlyContinue |
                 ForEach-Object { $removedBytes += $_.Length }
-            Remove-Item -LiteralPath $target -Recurse -Force
+            [void](Remove-ArtifactDirectory -LiteralPath $target)
         }
 
     if ($removedBytes -gt 0) {
