@@ -39,6 +39,11 @@ abstract class RenderingIntentFlag {
   static const int annotationsDisable = 0x40;
   static const int isEditing = 0x80;
   static const int opList = 0x100;
+
+  static const int DISPLAY = display;
+  static const int PRINT = print;
+  static const int ANY = any;
+  static const int SAVE = save;
 }
 
 abstract class AnnotationMode {
@@ -112,6 +117,10 @@ abstract class ImageKind {
   static const int grayscale1bpp = 1;
   static const int rgb24bpp = 2;
   static const int rgba32bpp = 3;
+
+  static const int GRAYSCALE_1BPP = grayscale1bpp;
+  static const int RGB_24BPP = rgb24bpp;
+  static const int RGBA_32BPP = rgba32bpp;
 }
 
 abstract class AnnotationType {
@@ -914,3 +923,329 @@ bool isValidExplicitDest(
 }
 
 const String annotationPrefix = 'pdfjs_internal_id_';
+
+class Util {
+  static String makeHexColor(int r, int g, int b) {
+    return '#${r.toRadixString(16).padLeft(2, '0')}${g.toRadixString(16).padLeft(2, '0')}${b.toRadixString(16).padLeft(2, '0')}';
+  }
+
+  static void scaleMinMax(List<num> transform, List<num> minMax) {
+    num temp;
+    if (transform[0] != 0) {
+      if (transform[0] < 0) {
+        temp = minMax[0];
+        minMax[0] = minMax[2];
+        minMax[2] = temp;
+      }
+      minMax[0] *= transform[0];
+      minMax[2] *= transform[0];
+
+      if (transform[3] < 0) {
+        temp = minMax[1];
+        minMax[1] = minMax[3];
+        minMax[3] = temp;
+      }
+      minMax[1] *= transform[3];
+      minMax[3] *= transform[3];
+    } else {
+      temp = minMax[0];
+      minMax[0] = minMax[1];
+      minMax[1] = temp;
+      temp = minMax[2];
+      minMax[2] = minMax[3];
+      minMax[3] = temp;
+
+      if (transform[1] < 0) {
+        temp = minMax[1];
+        minMax[1] = minMax[3];
+        minMax[3] = temp;
+      }
+      minMax[1] *= transform[1];
+      minMax[3] *= transform[1];
+
+      if (transform[2] < 0) {
+        temp = minMax[0];
+        minMax[0] = minMax[2];
+        minMax[2] = temp;
+      }
+      minMax[0] *= transform[2];
+      minMax[2] *= transform[2];
+    }
+    minMax[0] += transform[4];
+    minMax[1] += transform[5];
+    minMax[2] += transform[4];
+    minMax[3] += transform[5];
+  }
+
+  static List<double> transform(List<num> m1, List<num> m2) {
+    return [
+      (m1[0] * m2[0] + m1[2] * m2[1]).toDouble(),
+      (m1[1] * m2[0] + m1[3] * m2[1]).toDouble(),
+      (m1[0] * m2[2] + m1[2] * m2[3]).toDouble(),
+      (m1[1] * m2[2] + m1[3] * m2[3]).toDouble(),
+      (m1[0] * m2[4] + m1[2] * m2[5] + m1[4]).toDouble(),
+      (m1[1] * m2[4] + m1[3] * m2[5] + m1[5]).toDouble(),
+    ];
+  }
+
+  static void applyTransform(List<num> p, List<num> m, [int pos = 0]) {
+    final p0 = p[pos];
+    final p1 = p[pos + 1];
+    p[pos] = p0 * m[0] + p1 * m[2] + m[4];
+    p[pos + 1] = p0 * m[1] + p1 * m[3] + m[5];
+  }
+
+  static void applyTransformToBezier(List<num> p, List<num> transform, [int pos = 0]) {
+    final m0 = transform[0];
+    final m1 = transform[1];
+    final m2 = transform[2];
+    final m3 = transform[3];
+    final m4 = transform[4];
+    final m5 = transform[5];
+    for (var i = 0; i < 6; i += 2) {
+      final pI = p[pos + i];
+      final pI1 = p[pos + i + 1];
+      p[pos + i] = pI * m0 + pI1 * m2 + m4;
+      p[pos + i + 1] = pI * m1 + pI1 * m3 + m5;
+    }
+  }
+
+  static void applyInverseTransform(List<num> p, List<num> m) {
+    final p0 = p[0];
+    final p1 = p[1];
+    final d = m[0] * m[3] - m[1] * m[2];
+    p[0] = (p0 * m[3] - p1 * m[2] + m[2] * m[5] - m[4] * m[3]) / d;
+    p[1] = (-p0 * m[1] + p1 * m[0] + m[4] * m[1] - m[5] * m[0]) / d;
+  }
+
+  static void axialAlignedBoundingBox(
+    List<num> rect,
+    List<num> transform,
+    List<num> output,
+  ) {
+    final m0 = transform[0];
+    final m1 = transform[1];
+    final m2 = transform[2];
+    final m3 = transform[3];
+    final m4 = transform[4];
+    final m5 = transform[5];
+    final r0 = rect[0];
+    final r1 = rect[1];
+    final r2 = rect[2];
+    final r3 = rect[3];
+
+    var a0 = m0 * r0 + m4;
+    var a2 = a0;
+    var a1 = m0 * r2 + m4;
+    var a3 = a1;
+    var b0 = m3 * r1 + m5;
+    var b2 = b0;
+    var b1 = m3 * r3 + m5;
+    var b3 = b1;
+
+    if (m1 != 0 || m2 != 0) {
+      final m1r0 = m1 * r0;
+      final m1r2 = m1 * r2;
+      final m2r1 = m2 * r1;
+      final m2r3 = m2 * r3;
+      a0 += m2r1;
+      a3 += m2r1;
+      a1 += m2r3;
+      a2 += m2r3;
+      b0 += m1r0;
+      b3 += m1r0;
+      b1 += m1r2;
+      b2 += m1r2;
+    }
+
+    output[0] = math.min(output[0], math.min(a0, math.min(a1, math.min(a2, a3))));
+    output[1] = math.min(output[1], math.min(b0, math.min(b1, math.min(b2, b3))));
+    output[2] = math.max(output[2], math.max(a0, math.max(a1, math.max(a2, a3))));
+    output[3] = math.max(output[3], math.max(b0, math.max(b1, math.max(b2, b3))));
+  }
+
+  static List<double> inverseTransform(List<num> m) {
+    final d = m[0] * m[3] - m[1] * m[2];
+    return [
+      (m[3] / d).toDouble(),
+      (-m[1] / d).toDouble(),
+      (-m[2] / d).toDouble(),
+      (m[0] / d).toDouble(),
+      ((m[2] * m[5] - m[4] * m[3]) / d).toDouble(),
+      ((m[4] * m[1] - m[5] * m[0]) / d).toDouble(),
+    ];
+  }
+
+  static void singularValueDecompose2dScale(List<num> matrix, List<num> output) {
+    final m0 = matrix[0];
+    final m1 = matrix[1];
+    final m2 = matrix[2];
+    final m3 = matrix[3];
+    final a = m0 * m0 + m1 * m1;
+    final b = m0 * m2 + m1 * m3;
+    final c = m2 * m2 + m3 * m3;
+
+    final first = (a + c) / 2;
+    final second = math.sqrt(first * first - (a * c - b * b));
+    output[0] = math.sqrt(first + second != 0 ? first + second : 1);
+    output[1] = math.sqrt(first - second != 0 ? first - second : 1);
+  }
+
+  static List<double> normalizeRect(List<num> rect) {
+    final r = rect.map((e) => e.toDouble()).toList();
+    if (rect[0] > rect[2]) {
+      r[0] = rect[2].toDouble();
+      r[2] = rect[0].toDouble();
+    }
+    if (rect[1] > rect[3]) {
+      r[1] = rect[3].toDouble();
+      r[3] = rect[1].toDouble();
+    }
+    return r;
+  }
+
+  static List<double>? intersect(List<num> rect1, List<num> rect2) {
+    final xLow = math.max(
+      math.min(rect1[0], rect1[2]),
+      math.min(rect2[0], rect2[2]),
+    );
+    final xHigh = math.min(
+      math.max(rect1[0], rect1[2]),
+      math.max(rect2[0], rect2[2]),
+    );
+    if (xLow > xHigh) {
+      return null;
+    }
+    final yLow = math.max(
+      math.min(rect1[1], rect1[3]),
+      math.min(rect2[1], rect2[3]),
+    );
+    final yHigh = math.min(
+      math.max(rect1[1], rect1[3]),
+      math.max(rect2[1], rect2[3]),
+    );
+    if (yLow > yHigh) {
+      return null;
+    }
+
+    return [xLow.toDouble(), yLow.toDouble(), xHigh.toDouble(), yHigh.toDouble()];
+  }
+
+  static void pointBoundingBox(num x, num y, List<num> minMax) {
+    minMax[0] = math.min(minMax[0], x);
+    minMax[1] = math.min(minMax[1], y);
+    minMax[2] = math.max(minMax[2], x);
+    minMax[3] = math.max(minMax[3], y);
+  }
+
+  static void rectBoundingBox(num x0, num y0, num x1, num y1, List<num> minMax) {
+    minMax[0] = math.min(minMax[0], math.min(x0, x1));
+    minMax[1] = math.min(minMax[1], math.min(y0, y1));
+    minMax[2] = math.max(minMax[2], math.max(x0, x1));
+    minMax[3] = math.max(minMax[3], math.max(y0, y1));
+  }
+
+  static void _getExtremumOnCurve(
+    num x0,
+    num x1,
+    num x2,
+    num x3,
+    num y0,
+    num y1,
+    num y2,
+    num y3,
+    num t,
+    List<num> minMax,
+  ) {
+    if (t <= 0 || t >= 1) {
+      return;
+    }
+    final mt = 1 - t;
+    final tt = t * t;
+    final ttt = tt * t;
+    final x = mt * (mt * (mt * x0 + 3 * t * x1) + 3 * tt * x2) + ttt * x3;
+    final y = mt * (mt * (mt * y0 + 3 * t * y1) + 3 * tt * y2) + ttt * y3;
+    minMax[0] = math.min(minMax[0], x);
+    minMax[1] = math.min(minMax[1], y);
+    minMax[2] = math.max(minMax[2], x);
+    minMax[3] = math.max(minMax[3], y);
+  }
+
+  static void _getExtremum(
+    num x0,
+    num x1,
+    num x2,
+    num x3,
+    num y0,
+    num y1,
+    num y2,
+    num y3,
+    num a,
+    num b,
+    num c,
+    List<num> minMax,
+  ) {
+    if (a.abs() < 1e-12) {
+      if (b.abs() >= 1e-12) {
+        _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, -c / b, minMax);
+      }
+      return;
+    }
+
+    final delta = b * b - 4 * c * a;
+    if (delta < 0) {
+      return;
+    }
+    final sqrtDelta = math.sqrt(delta);
+    final a2 = 2 * a;
+    _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, (-b + sqrtDelta) / a2, minMax);
+    _getExtremumOnCurve(x0, x1, x2, x3, y0, y1, y2, y3, (-b - sqrtDelta) / a2, minMax);
+  }
+
+  static void bezierBoundingBox(
+    num x0,
+    num y0,
+    num x1,
+    num y1,
+    num x2,
+    num y2,
+    num x3,
+    num y3,
+    List<num> minMax,
+  ) {
+    minMax[0] = math.min(minMax[0], math.min(x0, x3));
+    minMax[1] = math.min(minMax[1], math.min(y0, y3));
+    minMax[2] = math.max(minMax[2], math.max(x0, x3));
+    minMax[3] = math.max(minMax[3], math.max(y0, y3));
+
+    _getExtremum(
+      x0,
+      x1,
+      x2,
+      x3,
+      y0,
+      y1,
+      y2,
+      y3,
+      3 * (-x0 + 3 * (x1 - x2) + x3),
+      6 * (x0 - 2 * x1 + x2),
+      3 * (x1 - x0),
+      minMax,
+    );
+    _getExtremum(
+      x0,
+      x1,
+      x2,
+      x3,
+      y0,
+      y1,
+      y2,
+      y3,
+      3 * (-y0 + 3 * (y1 - y2) + y3),
+      6 * (y0 - 2 * y1 + y2),
+      3 * (y1 - y0),
+      minMax,
+    );
+  }
+}
+

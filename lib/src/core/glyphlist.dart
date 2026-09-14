@@ -4332,6 +4332,10 @@ final Map<String, int> _glyphsUnicodeMap = {
   'uniontext': 0x22c3,
   'vextenddouble': 0x2225,
   'vextendsingle': 0x2223,
+};
+
+final Map<String, int> _dingbatsGlyphsUnicodeMap = {
+  'space': 0x0020,
   'a1': 0x2701,
   'a2': 0x2702,
   'a202': 0x2703,
@@ -4536,3 +4540,4 @@ final Map<String, int> _glyphsUnicodeMap = {
 };
 
 Map<String, int> getGlyphsUnicode() => _glyphsUnicodeMap;
+Map<String, int> getDingbatsGlyphsUnicode() => _dingbatsGlyphsUnicodeMap;

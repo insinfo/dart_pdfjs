@@ -17,6 +17,7 @@ class ReadResult {
 abstract class BasePDFStream {
   // ignore: unused_field
   final dynamic _source;
+  dynamic get source => _source;
   
   // ignore: prefer_typing_uninitialized_variables
   final _pdfStreamReaderFactory;
@@ -28,6 +29,7 @@ abstract class BasePDFStream {
   final Set<BasePDFStreamRangeReader> _rangeReaders = {};
 
   BasePDFStream(this._source, this._pdfStreamReaderFactory, this._pdfStreamRangeReaderFactory);
+
 
   int get progressiveDataLength {
     return _fullReader?.loaded ?? 0;
@@ -77,10 +79,30 @@ abstract class BasePDFStreamReader {
   bool _isStreamingSupported = false;
   int _loaded = 0;
   
-  // ignore: unused_field
   final BasePDFStream _stream;
+  BasePDFStream get stream => _stream;
 
   BasePDFStreamReader(this._stream);
+
+
+  void setHeaders({
+    int? contentLength,
+    bool? isStreamingSupported,
+    bool? isRangeSupported,
+  }) {
+    if (contentLength != null) _contentLength = contentLength;
+    if (isStreamingSupported != null) _isStreamingSupported = isStreamingSupported;
+    if (isRangeSupported != null) _isRangeSupported = isRangeSupported;
+    if (!_headersCapability.isCompleted) {
+      _headersCapability.complete();
+    }
+  }
+
+  void rejectHeaders(Object error, [StackTrace? stackTrace]) {
+    if (!_headersCapability.isCompleted) {
+      _headersCapability.completeError(error, stackTrace);
+    }
+  }
 
   void callOnProgress() {
     onProgress?.call(_loaded, _contentLength);
@@ -120,10 +142,13 @@ abstract class BasePDFStreamReader {
 
 /// Interface for a PDF binary data fragment reader.
 abstract class BasePDFStreamRangeReader {
-  // ignore: unused_field
   final BasePDFStream _stream;
+  final int begin;
+  final int end;
 
-  BasePDFStreamRangeReader(this._stream, int begin, int end);
+  BasePDFStream get stream => _stream;
+
+  BasePDFStreamRangeReader(this._stream, this.begin, this.end);
 
   /// Requests a chunk of the binary data. The method returns the promise, which
   /// is resolved into object with properties "value" and "done".
@@ -136,3 +161,4 @@ abstract class BasePDFStreamRangeReader {
     unreachable('Abstract method `cancel` called');
   }
 }
+

@@ -693,15 +693,482 @@ class CalGrayCS extends ColorSpace {
       inputLength * (3 + alpha01);
 }
 
-class CalRGBCS extends DeviceRgbCS {
-  CalRGBCS(List<num>? whitePoint, List<num>? blackPoint, List<num>? gamma,
-      List<num>? matrix);
+class CalRGBCS extends ColorSpace {
+  static final Float32List _bradfordScaleMatrix = Float32List.fromList([
+    0.8951, 0.2664, -0.1614,
+    -0.7502, 1.7135, 0.0367,
+    0.0389, -0.0685, 1.0296,
+  ]);
+
+  static final Float32List _bradfordScaleInverseMatrix = Float32List.fromList([
+    0.9869929, -0.1470543, 0.1599627,
+    0.4323053, 0.5183603, 0.0492912,
+    -0.0085287, 0.0400428, 0.9684867,
+  ]);
+
+  static final Float32List _srgbD65XyzToRgbMatrix = Float32List.fromList([
+    3.2404542, -1.5371385, -0.4985314,
+    -0.9692660, 1.8760108, 0.0415560,
+    0.0556434, -0.2040259, 1.0572252,
+  ]);
+
+  static final Float32List _flatWhitepointMatrix =
+      Float32List.fromList([1.0, 1.0, 1.0]);
+
+  static final double _decodeLConstant =
+      math.pow((8.0 + 16.0) / 116.0, 3) / 8.0;
+
+  late Float32List whitePoint;
+  late Float32List blackPoint;
+  late double gr;
+  late double gg;
+  late double gb;
+  late double mxa;
+  late double mya;
+  late double mza;
+  late double mxb;
+  late double myb;
+  late double mzb;
+  late double mxc;
+  late double myc;
+  late double mzc;
+
+  CalRGBCS(
+    List<num>? whitePoint,
+    List<num>? blackPoint,
+    List<num>? gamma,
+    List<num>? matrix,
+  ) : super('CalRGB', 3) {
+    if (whitePoint == null || whitePoint.length < 3) {
+      throw FormatError('WhitePoint missing - required for color space CalRGB');
+    }
+    this.whitePoint = Float32List.fromList([
+      whitePoint[0].toDouble(),
+      whitePoint[1].toDouble(),
+      whitePoint[2].toDouble(),
+    ]);
+    if (blackPoint != null && blackPoint.length >= 3) {
+      this.blackPoint = Float32List.fromList([
+        blackPoint[0].toDouble(),
+        blackPoint[1].toDouble(),
+        blackPoint[2].toDouble(),
+      ]);
+    } else {
+      this.blackPoint = Float32List(3);
+    }
+
+    if (gamma != null && gamma.length >= 3) {
+      gr = gamma[0].toDouble();
+      gg = gamma[1].toDouble();
+      gb = gamma[2].toDouble();
+    } else {
+      gr = gg = gb = 1.0;
+    }
+
+    if (matrix != null && matrix.length >= 9) {
+      mxa = matrix[0].toDouble();
+      mya = matrix[1].toDouble();
+      mza = matrix[2].toDouble();
+      mxb = matrix[3].toDouble();
+      myb = matrix[4].toDouble();
+      mzb = matrix[5].toDouble();
+      mxc = matrix[6].toDouble();
+      myc = matrix[7].toDouble();
+      mzc = matrix[8].toDouble();
+    } else {
+      mxa = 1.0;
+      mya = 0.0;
+      mza = 0.0;
+      mxb = 0.0;
+      myb = 1.0;
+      mzb = 0.0;
+      mxc = 0.0;
+      myc = 0.0;
+      mzc = 1.0;
+    }
+
+    final xw = this.whitePoint[0];
+    final yw = this.whitePoint[1];
+    final zw = this.whitePoint[2];
+    if (xw < 0 || zw < 0 || yw != 1.0) {
+      throw FormatError(
+        'Invalid WhitePoint components for $name, no fallback available',
+      );
+    }
+
+    final xb = this.blackPoint[0];
+    final yb = this.blackPoint[1];
+    final zb = this.blackPoint[2];
+    if (xb < 0 || yb < 0 || zb < 0) {
+      info(
+          'Invalid BlackPoint for $name [$xb, $yb, $zb], falling back to default.');
+      this.blackPoint = Float32List(3);
+    }
+
+    if (gr < 0 || gg < 0 || gb < 0) {
+      info('Invalid Gamma [$gr, $gg, $gb] for $name, falling back to default.');
+      gr = gg = gb = 1.0;
+    }
+  }
+
+  void _matrixProduct(Float32List a, Float32List b, Float32List result) {
+    result[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    result[1] = a[3] * b[0] + a[4] * b[1] + a[5] * b[2];
+    result[2] = a[6] * b[0] + a[7] * b[1] + a[8] * b[2];
+  }
+
+  void _toFlat(
+      Float32List sourceWhitePoint, Float32List lms, Float32List result) {
+    result[0] = (lms[0] * 1.0) / sourceWhitePoint[0];
+    result[1] = (lms[1] * 1.0) / sourceWhitePoint[1];
+    result[2] = (lms[2] * 1.0) / sourceWhitePoint[2];
+  }
+
+  void _toD65(
+      Float32List sourceWhitePoint, Float32List lms, Float32List result) {
+    const d65x = 0.95047;
+    const d65y = 1.0;
+    const d65z = 1.08883;
+
+    result[0] = (lms[0] * d65x) / sourceWhitePoint[0];
+    result[1] = (lms[1] * d65y) / sourceWhitePoint[1];
+    result[2] = (lms[2] * d65z) / sourceWhitePoint[2];
+  }
+
+  double _srgbTransferFunction(double color) {
+    if (color <= 0.0031308) {
+      return mathClamp(12.92 * color, 0.0, 1.0).toDouble();
+    }
+    if (color >= 0.99554525) {
+      return 1.0;
+    }
+    return mathClamp(
+      (1.0 + 0.055) * math.pow(color, 1.0 / 2.4) - 0.055,
+      0.0,
+      1.0,
+    ).toDouble();
+  }
+
+  double _decodeL(double l) {
+    if (l < 0) {
+      return -_decodeL(-l);
+    }
+    if (l > 8.0) {
+      return math.pow((l + 16.0) / 116.0, 3).toDouble();
+    }
+    return l * _decodeLConstant;
+  }
+
+  void _compensateBlackPoint(
+    Float32List sourceBlackPoint,
+    Float32List xyzFlat,
+    Float32List result,
+  ) {
+    if (sourceBlackPoint[0] == 0 &&
+        sourceBlackPoint[1] == 0 &&
+        sourceBlackPoint[2] == 0) {
+      result[0] = xyzFlat[0];
+      result[1] = xyzFlat[1];
+      result[2] = xyzFlat[2];
+      return;
+    }
+
+    final zeroDecodeL = _decodeL(0);
+    final xDst = zeroDecodeL;
+    final xSrc = _decodeL(sourceBlackPoint[0]);
+    final yDst = zeroDecodeL;
+    final ySrc = _decodeL(sourceBlackPoint[1]);
+    final zDst = zeroDecodeL;
+    final zSrc = _decodeL(sourceBlackPoint[2]);
+
+    final xScale = (1.0 - xDst) / (1.0 - xSrc);
+    final xOffset = 1.0 - xScale;
+    final yScale = (1.0 - yDst) / (1.0 - ySrc);
+    final yOffset = 1.0 - yScale;
+    final zScale = (1.0 - zDst) / (1.0 - zSrc);
+    final zOffset = 1.0 - zScale;
+
+    result[0] = xyzFlat[0] * xScale + xOffset;
+    result[1] = xyzFlat[1] * yScale + yOffset;
+    result[2] = xyzFlat[2] * zScale + zOffset;
+  }
+
+  void _normalizeWhitePointToFlat(
+    Float32List sourceWhitePoint,
+    Float32List xyzIn,
+    Float32List result,
+    Float32List tempNorm,
+  ) {
+    if (sourceWhitePoint[0] == 1.0 && sourceWhitePoint[2] == 1.0) {
+      result[0] = xyzIn[0];
+      result[1] = xyzIn[1];
+      result[2] = xyzIn[2];
+      return;
+    }
+    _matrixProduct(_bradfordScaleMatrix, xyzIn, result);
+    _toFlat(sourceWhitePoint, result, tempNorm);
+    _matrixProduct(_bradfordScaleInverseMatrix, tempNorm, result);
+  }
+
+  void _normalizeWhitePointToD65(
+    Float32List sourceWhitePoint,
+    Float32List xyzIn,
+    Float32List result,
+    Float32List tempNorm,
+  ) {
+    _matrixProduct(_bradfordScaleMatrix, xyzIn, result);
+    _toD65(sourceWhitePoint, result, tempNorm);
+    _matrixProduct(_bradfordScaleInverseMatrix, tempNorm, result);
+  }
+
+  void _toRgb(
+    List<num> src,
+    int srcOffset,
+    Uint8List dest,
+    int destOffset,
+    double scale,
+    Float32List xyz,
+    Float32List xyzFlat,
+    Float32List tempNorm,
+  ) {
+    final a = mathClamp(src[srcOffset] * scale, 0.0, 1.0).toDouble();
+    final b = mathClamp(src[srcOffset + 1] * scale, 0.0, 1.0).toDouble();
+    final c = mathClamp(src[srcOffset + 2] * scale, 0.0, 1.0).toDouble();
+
+    final agr = a == 1.0 ? 1.0 : math.pow(a, gr).toDouble();
+    final bgg = b == 1.0 ? 1.0 : math.pow(b, gg).toDouble();
+    final cgb = c == 1.0 ? 1.0 : math.pow(c, gb).toDouble();
+
+    final x = mxa * agr + mxb * bgg + mxc * cgb;
+    final y = mya * agr + myb * bgg + myc * cgb;
+    final z = mza * agr + mzb * bgg + mzc * cgb;
+
+    xyz[0] = x;
+    xyz[1] = y;
+    xyz[2] = z;
+
+    _normalizeWhitePointToFlat(whitePoint, xyz, xyzFlat, tempNorm);
+    _compensateBlackPoint(blackPoint, xyzFlat, xyz);
+    _normalizeWhitePointToD65(_flatWhitepointMatrix, xyz, xyzFlat, tempNorm);
+    _matrixProduct(_srgbD65XyzToRgbMatrix, xyzFlat, xyz);
+
+    dest[destOffset] =
+        mathClamp((_srgbTransferFunction(xyz[0]) * 255).round(), 0, 255)
+            .toInt();
+    dest[destOffset + 1] =
+        mathClamp((_srgbTransferFunction(xyz[1]) * 255).round(), 0, 255)
+            .toInt();
+    dest[destOffset + 2] =
+        mathClamp((_srgbTransferFunction(xyz[2]) * 255).round(), 0, 255)
+            .toInt();
+  }
+
+  @override
+  void getRgbItem(
+    List<num> src,
+    int srcOffset,
+    Uint8List dest,
+    int destOffset,
+  ) {
+    final xyz = Float32List(3);
+    final xyzFlat = Float32List(3);
+    final tempNorm = Float32List(3);
+    _toRgb(src, srcOffset, dest, destOffset, 1.0, xyz, xyzFlat, tempNorm);
+  }
+
+  @override
+  void getRgbBuffer(
+    List<num> src,
+    int srcOffset,
+    int count,
+    Uint8List dest,
+    int destOffset,
+    int bits,
+    int alpha01,
+  ) {
+    final scale = 1.0 / ((1 << bits) - 1);
+    final xyz = Float32List(3);
+    final xyzFlat = Float32List(3);
+    final tempNorm = Float32List(3);
+
+    for (var i = 0; i < count; i++) {
+      _toRgb(src, srcOffset, dest, destOffset, scale, xyz, xyzFlat, tempNorm);
+      srcOffset += 3;
+      destOffset += 3 + alpha01;
+    }
+  }
+
+  @override
+  int getOutputLength(int inputLength, int alpha01) {
+    return (inputLength * (3 + alpha01)) ~/ 3;
+  }
 }
 
 class LabCS extends ColorSpace {
+  late double xw;
+  late double yw;
+  late double zw;
+  late double amin;
+  late double amax;
+  late double bmin;
+  late double bmax;
+  late double xb;
+  late double yb;
+  late double zb;
+
   LabCS(List<num>? whitePoint, List<num>? blackPoint, List<num>? range)
-      : super('Lab', 3);
+      : super('Lab', 3) {
+    if (whitePoint == null || whitePoint.length < 3) {
+      throw FormatError('WhitePoint missing - required for color space Lab');
+    }
+    xw = whitePoint[0].toDouble();
+    yw = whitePoint[1].toDouble();
+    zw = whitePoint[2].toDouble();
+
+    if (range != null && range.length >= 4) {
+      amin = range[0].toDouble();
+      amax = range[1].toDouble();
+      bmin = range[2].toDouble();
+      bmax = range[3].toDouble();
+    } else {
+      amin = -100.0;
+      amax = 100.0;
+      bmin = -100.0;
+      bmax = 100.0;
+    }
+
+    if (blackPoint != null && blackPoint.length >= 3) {
+      xb = blackPoint[0].toDouble();
+      yb = blackPoint[1].toDouble();
+      zb = blackPoint[2].toDouble();
+    } else {
+      xb = yb = zb = 0.0;
+    }
+
+    if (xw < 0 || zw < 0 || yw != 1.0) {
+      throw FormatError('Invalid WhitePoint components, no fallback available');
+    }
+    if (xb < 0 || yb < 0 || zb < 0) {
+      info('Invalid BlackPoint, falling back to default');
+      xb = yb = zb = 0.0;
+    }
+    if (amin > amax || bmin > bmax) {
+      info('Invalid Range, falling back to defaults');
+      amin = -100.0;
+      amax = 100.0;
+      bmin = -100.0;
+      bmax = 100.0;
+    }
+  }
+
+  double _fnG(double x) {
+    return x >= 6.0 / 29.0
+        ? math.pow(x, 3).toDouble()
+        : (108.0 / 841.0) * (x - 4.0 / 29.0);
+  }
+
+  double _decode(double value, double high1, double low2, double high2) {
+    return low2 + (value * (high2 - low2)) / high1;
+  }
+
+  void _toRgb(
+    List<num> src,
+    int srcOffset,
+    dynamic maxVal,
+    Uint8List dest,
+    int destOffset,
+  ) {
+    var ls = src[srcOffset].toDouble();
+    var as = src[srcOffset + 1].toDouble();
+    var bs = src[srcOffset + 2].toDouble();
+
+    if (maxVal is num) {
+      final mv = maxVal.toDouble();
+      ls = _decode(ls, mv, 0.0, 100.0);
+      as = _decode(as, mv, amin, amax);
+      bs = _decode(bs, mv, bmin, bmax);
+    }
+
+    if (as > amax) {
+      as = amax;
+    } else if (as < amin) {
+      as = amin;
+    }
+    if (bs > bmax) {
+      bs = bmax;
+    } else if (bs < bmin) {
+      bs = bmin;
+    }
+
+    final m = (ls + 16.0) / 116.0;
+    final l = m + as / 500.0;
+    final n = m - bs / 200.0;
+
+    final x = xw * _fnG(l);
+    final y = yw * _fnG(m);
+    final z = zw * _fnG(n);
+
+    double r, g, b;
+    if (zw < 1.0) {
+      // D50
+      r = x * 3.1339 + y * -1.617 + z * -0.4906;
+      g = x * -0.9785 + y * 1.916 + z * 0.0333;
+      b = x * 0.072 + y * -0.229 + z * 1.4057;
+    } else {
+      // D65
+      r = x * 3.2406 + y * -1.5372 + z * -0.4986;
+      g = x * -0.9689 + y * 1.8758 + z * 0.0415;
+      b = x * 0.0557 + y * -0.204 + z * 1.057;
+    }
+
+    dest[destOffset] = (math.sqrt(r.clamp(0.0, double.infinity)) * 255.0)
+        .round()
+        .clamp(0, 255);
+    dest[destOffset + 1] = (math.sqrt(g.clamp(0.0, double.infinity)) * 255.0)
+        .round()
+        .clamp(0, 255);
+    dest[destOffset + 2] = (math.sqrt(b.clamp(0.0, double.infinity)) * 255.0)
+        .round()
+        .clamp(0, 255);
+  }
+
+  @override
+  void getRgbItem(
+    List<num> src,
+    int srcOffset,
+    Uint8List dest,
+    int destOffset,
+  ) {
+    _toRgb(src, srcOffset, false, dest, destOffset);
+  }
+
+  @override
+  void getRgbBuffer(
+    List<num> src,
+    int srcOffset,
+    int count,
+    Uint8List dest,
+    int destOffset,
+    int bits,
+    int alpha01,
+  ) {
+    final maxVal = (1 << bits) - 1;
+    for (var i = 0; i < count; i++) {
+      _toRgb(src, srcOffset, maxVal, dest, destOffset);
+      srcOffset += 3;
+      destOffset += 3 + alpha01;
+    }
+  }
+
+  @override
+  int getOutputLength(int inputLength, int alpha01) {
+    return (inputLength * (3 + alpha01)) ~/ 3;
+  }
+
+  @override
+  bool isDefaultDecode(List<num>? decode, int bpc) => true;
 
   @override
   bool get usesZeroToOneRange => false;
 }
+

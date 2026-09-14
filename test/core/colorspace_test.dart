@@ -110,5 +110,35 @@ void main() {
 
       expect(dest, [0, 0, 255, 255, 0, 0]);
     });
+
+    test('converts CalGrayCS representative values', () {
+      final cs = CalGrayCS([1, 1, 1], [0, 0, 0], 2.0);
+      final rgb = cs.getRgb([1.0], 0);
+      expect(rgb, [255, 255, 255]);
+      expect(cs.getOutputLength(4, 0), 12);
+    });
+
+    test('converts CalRGBCS representative values', () {
+      final cs = CalRGBCS(
+        [1, 1, 1],
+        [0, 0, 0],
+        [1, 1, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      );
+      final rgb = cs.getRgb([0.1, 0.2, 0.3], 0);
+      expect(rgb, [0, 147, 151]);
+      expect(cs.getOutputLength(4, 0), 4);
+      expect(cs.isPassthrough(8), isFalse);
+    });
+
+    test('converts LabCS representative values', () {
+      final cs = LabCS([1, 1, 1], [0, 0, 0], [-100, 100, -100, 100]);
+      final rgb = cs.getRgb([55, 25, 35], 0);
+      expect(rgb, [188, 100, 61]);
+      expect(cs.getOutputLength(4, 0), 4);
+      expect(cs.isPassthrough(8), isFalse);
+      expect(cs.isDefaultDecode([0, 1], 8), isTrue);
+      expect(cs.usesZeroToOneRange, isFalse);
+    });
   });
 }

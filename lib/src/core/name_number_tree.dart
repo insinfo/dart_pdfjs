@@ -1,12 +1,11 @@
 import '../shared/util.dart';
 import 'primitives.dart';
-import 'xref.dart';
 
 /// A NameTree/NumberTree is like a Dict but has some advantageous properties,
 /// see the specification (7.9.6 and 7.9.7) for additional details.
 abstract class NameOrNumberTree {
   final dynamic root;
-  final XRef xref;
+  final dynamic xref;
   final String _type;
 
   NameOrNumberTree(this.root, this.xref, this._type);
@@ -155,9 +154,9 @@ abstract class NameOrNumberTree {
 }
 
 class NameTree extends NameOrNumberTree {
-  NameTree(dynamic root, XRef xref) : super(root, xref, 'Names');
+  NameTree(dynamic root, dynamic xref) : super(root, xref, 'Names');
 }
 
 class NumberTree extends NameOrNumberTree {
-  NumberTree(dynamic root, XRef xref) : super(root, xref, 'Nums');
+  NumberTree(dynamic root, dynamic xref) : super(root, xref, 'Nums');
 }

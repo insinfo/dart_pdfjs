@@ -599,3 +599,4 @@ List<dynamic>? compileType3Glyph(Map<String, dynamic> imgData) {
     Float32List.fromList([0, 0, width.toDouble(), height.toDouble()]),
   ];
 }
+

@@ -17,6 +17,8 @@ class JpegStream extends DecodeStream {
   int drawWidth = 0;
   int drawHeight = 0;
 
+  static void setOptions(Map<String, dynamic> options) {}
+
   JpegStream(BaseStream str, int? maybeLength, dynamic paramsArg) : super(maybeLength ?? 0) {
     this.stream = str;
     this.dict = (str as dynamic).dict;

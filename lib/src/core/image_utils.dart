@@ -4,6 +4,147 @@
 import '../shared/util.dart';
 import 'primitives.dart';
 
+abstract class BaseLocalCache {
+  BaseLocalCache({bool onlyRefs = false}) : _onlyRefs = onlyRefs;
+
+  final bool _onlyRefs;
+  final Map<String, Ref> _nameRefMap = <String, Ref>{};
+  final Map<String, dynamic> _imageMap = <String, dynamic>{};
+  final RefSetCache _imageCache = RefSetCache();
+
+  dynamic getByName(String name) {
+    if (_onlyRefs) {
+      throw UnsupportedError('Should not call getByName method on onlyRefs cache.');
+    }
+    final ref = _nameRefMap[name];
+    if (ref != null) {
+      return getByRef(ref);
+    }
+    return _imageMap[name];
+  }
+
+  dynamic getByRef(Ref? ref) {
+    if (ref == null) return null;
+    return _imageCache.get(ref);
+  }
+
+  void set(String? name, Ref? ref, dynamic data);
+}
+
+class LocalImageCache extends BaseLocalCache {
+  @override
+  void set(String? name, Ref? ref, dynamic data) {
+    if (name == null) {
+      throw ArgumentError('LocalImageCache.set - expected "name" argument.');
+    }
+    if (ref != null) {
+      if (_imageCache.has(ref)) {
+        return;
+      }
+      _nameRefMap[name] = ref;
+      _imageCache.put(ref, data);
+      return;
+    }
+    if (_imageMap.containsKey(name)) {
+      return;
+    }
+    _imageMap[name] = data;
+  }
+}
+
+class LocalColorSpaceCache extends BaseLocalCache {
+  @override
+  void set(String? name, Ref? ref, dynamic data) {
+    if (name == null && ref == null) {
+      throw ArgumentError(
+        'LocalColorSpaceCache.set - expected "name" and/or "ref" argument.',
+      );
+    }
+    if (ref != null) {
+      if (_imageCache.has(ref)) {
+        return;
+      }
+      if (name != null) {
+        _nameRefMap[name] = ref;
+      }
+      _imageCache.put(ref, data);
+      return;
+    }
+    if (name != null && _imageMap.containsKey(name)) {
+      return;
+    }
+    if (name != null) {
+      _imageMap[name] = data;
+    }
+  }
+}
+
+class LocalFunctionCache extends BaseLocalCache {
+  LocalFunctionCache() : super(onlyRefs: true);
+
+  @override
+  void set(String? name, Ref? ref, dynamic data) {
+    if (ref == null) {
+      throw ArgumentError('LocalFunctionCache.set - expected "ref" argument.');
+    }
+    if (_imageCache.has(ref)) {
+      return;
+    }
+    _imageCache.put(ref, data);
+  }
+}
+
+class LocalGStateCache extends BaseLocalCache {
+  @override
+  void set(String? name, Ref? ref, dynamic data) {
+    if (name == null) {
+      throw ArgumentError('LocalGStateCache.set - expected "name" argument.');
+    }
+    if (ref != null) {
+      if (_imageCache.has(ref)) {
+        return;
+      }
+      _nameRefMap[name] = ref;
+      _imageCache.put(ref, data);
+      return;
+    }
+    if (_imageMap.containsKey(name)) {
+      return;
+    }
+    _imageMap[name] = data;
+  }
+}
+
+class LocalTilingPatternCache extends BaseLocalCache {
+  LocalTilingPatternCache() : super(onlyRefs: true);
+
+  @override
+  void set(String? name, Ref? ref, dynamic data) {
+    if (ref == null) {
+      throw ArgumentError('LocalTilingPatternCache.set - expected "ref" argument.');
+    }
+    if (_imageCache.has(ref)) {
+      return;
+    }
+    _imageCache.put(ref, data);
+  }
+}
+
+class RegionalImageCache extends BaseLocalCache {
+  RegionalImageCache() : super(onlyRefs: true);
+
+  @override
+  void set(String? name, Ref? ref, dynamic data) {
+    if (ref == null) {
+      throw ArgumentError('RegionalImageCache.set - expected "ref" argument.');
+    }
+    if (_imageCache.has(ref)) {
+      return;
+    }
+    _imageCache.put(ref, data);
+  }
+}
+
 class GlobalImageCache {
   static const int numPagesThreshold = 2;
   static const int minImagesToCache = 10;

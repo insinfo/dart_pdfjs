@@ -1620,7 +1620,10 @@ class Font {
     } else {
       final glyphsUnicodeMap = getGlyphsUnicode();
       final map = <int, dynamic>{};
-      toUnicode.forEach((charCode, unicodeCharCode) {
+      toUnicode.forEach((charCodeRaw, unicodeCharCode) {
+        final charCode = charCodeRaw is int
+            ? charCodeRaw
+            : int.tryParse(charCodeRaw.toString()) ?? 0;
         var code = unicodeCharCode;
         if (!composite) {
           final glyphName = _mapGet(differences, charCode) ??

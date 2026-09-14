@@ -248,8 +248,23 @@ class Catalog {
     return shadow(this, 'toplevelPagesDict', pagesObj);
   }
 
-  void setActualNumPages(int? num) {
+  void setActualNumPages([int? num]) {
     _actualNumPages = num;
+  }
+
+  Future<Map<int, List<dynamic>>> getAllPageDicts([bool recoveryMode = false]) async {
+    final map = <int, List<dynamic>>{};
+    final count = numPages;
+    for (var i = 0; i < count; i++) {
+      try {
+        final pair = await getPageDict(i);
+        map[i] = pair;
+      } catch (ex) {
+        if (!recoveryMode) rethrow;
+        map[i] = [Dict.empty, null];
+      }
+    }
+    return map;
   }
 
   bool get hasActualNumPages {
@@ -962,7 +977,7 @@ class Catalog {
     return shadow(this, 'jsActions', actions);
   }
 
-  String get baseUrl {
+  String? get baseUrl {
     final uri = _catDict.get('URI');
     if (uri is Dict) {
       final base = uri.get('Base');

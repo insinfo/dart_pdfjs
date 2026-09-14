@@ -1,8 +1,11 @@
 // Copyright 2012 Mozilla Foundation
 // Ported to Dart, 2026. Apache License 2.0.
 
+import 'dart:typed_data';
+
 final Object circularRef = Object();
 final Object eof = Object();
+final Object EOF = eof;
 
 final Map<String, Cmd> _cmdCache = {};
 final Map<String, Name> _nameCache = {};
@@ -18,7 +21,10 @@ class Name {
   final String name;
   const Name._(this.name);
 
-  factory Name.get(String name) {
+  factory Name.get(dynamic name) {
+    if (name is! String) {
+      throw ArgumentError('Name: The "name" must be a string.');
+    }
     return _nameCache.putIfAbsent(name, () => Name._(name));
   }
 }
@@ -27,12 +33,15 @@ class Cmd {
   final String cmd;
   const Cmd._(this.cmd);
 
-  factory Cmd.get(String cmd) {
+  factory Cmd.get(dynamic cmd) {
+    if (cmd is! String) {
+      throw ArgumentError('Cmd: The "cmd" must be a string.');
+    }
     return _cmdCache.putIfAbsent(cmd, () => Cmd._(cmd));
   }
 }
 
-class Dict {
+class Dict extends Iterable<List<dynamic>> {
   final Map<String, dynamic> _map = {};
   dynamic objId;
   bool suppressEncryption = false;
@@ -46,7 +55,11 @@ class Dict {
 
   int get size => _map.length;
 
-  dynamic _getValue(bool isAsync, String key1, [String? key2, String? key3]) {
+  @override
+  int get length => _map.length;
+
+  dynamic _getValue(bool isAsync, [String? key1, String? key2, String? key3]) {
+    if (key1 == null) return null;
     dynamic value = _map[key1];
     if (value == null && key2 != null) {
       value = _map[key2];
@@ -62,15 +75,15 @@ class Dict {
     return value;
   }
 
-  dynamic get(String key1, [String? key2, String? key3]) {
+  dynamic get([String? key1, String? key2, String? key3]) {
     return _getValue(false, key1, key2, key3);
   }
 
-  Future<dynamic> getAsync(String key1, [String? key2, String? key3]) async {
+  Future<dynamic> getAsync([String? key1, String? key2, String? key3]) async {
     return _getValue(true, key1, key2, key3);
   }
 
-  dynamic getArray(String key1, [String? key2, String? key3]) {
+  dynamic getArray([String? key1, String? key2, String? key3]) {
     dynamic value = _getValue(false, key1, key2, key3);
     if (value is List) {
       value = List<dynamic>.from(value);
@@ -99,9 +112,14 @@ class Dict {
     return _map.entries;
   }
 
-  void set(String key, dynamic value) {
-    if (value == null) {
-      throw ArgumentError('Dict.set: The "value" cannot be null.');
+  static const Object _noValue = Object();
+
+  void set(dynamic key, [dynamic value = _noValue]) {
+    if (key is! String) {
+      throw ArgumentError('Dict.set: The "key" must be a string.');
+    }
+    if (identical(value, _noValue)) {
+      throw ArgumentError('Dict.set: The "value" cannot be undefined.');
     }
     _map[key] = value;
   }
@@ -119,8 +137,7 @@ class Dict {
   }
 
   void setIfArray(String key, dynamic value) {
-    // ArrayBuffer isView equivalent handles by typed data lists being Lists
-    if (value is List) {
+    if (value is List || value is TypedData) {
       set(key, value);
     }
   }
@@ -145,9 +162,12 @@ class Dict {
     }
   }
 
-  bool has(String key) {
+  bool has([dynamic key]) {
+    if (key is! String) return false;
     return _map.containsKey(key);
   }
+
+  Iterator<List<dynamic>> get iterator => iterable.iterator;
 
   Iterable<List<dynamic>> get iterable sync* {
     for (final entry in _map.entries) {
@@ -222,7 +242,7 @@ class _EmptyDict extends Dict {
   _EmptyDict() : super(null);
 
   @override
-  void set(String key, dynamic value) {
+  void set(dynamic key, [dynamic value = Dict._noValue]) {
     throw UnsupportedError("Should not call `set` on the empty dictionary.");
   }
 }
@@ -253,17 +273,22 @@ class Ref {
     return ref;
   }
 
+  factory Ref(int num, int gen) => Ref.get(num, gen);
+
   factory Ref.get(int num, int gen) {
     final key = gen == 0 ? "${num}R" : "${num}R$gen";
     return _refCache.putIfAbsent(key, () => Ref._(num, gen));
   }
 }
 
-class RefSet {
+class RefSet extends Iterable<String> {
   final Set<String> _set;
 
   RefSet([RefSet? parent])
       : _set = parent != null ? Set<String>.from(parent._set) : <String>{};
+
+  @override
+  Iterator<String> get iterator => _set.iterator;
 
   bool has(dynamic ref) {
     return _set.contains(ref.toString());
@@ -284,10 +309,14 @@ class RefSet {
   }
 }
 
-class RefSetCache {
+class RefSetCache extends Iterable<dynamic> {
   final Map<String, dynamic> _map = {};
 
+  @override
   int get size => _map.length;
+
+  @override
+  Iterator<dynamic> get iterator => _map.values.iterator;
 
   dynamic get(dynamic ref) {
     return _map[ref.toString()];
@@ -307,13 +336,13 @@ class RefSetCache {
 
   Iterable<dynamic> get values => _map.values;
 
-  Iterable<List<dynamic>> get items sync* {
+  Iterable<List<dynamic>> items() sync* {
     for (final entry in _map.entries) {
       yield [Ref.fromString(entry.key), entry.value];
     }
   }
 
-  Iterable<Ref?> get keys sync* {
+  Iterable<Ref?> keys() sync* {
     for (final ref in _map.keys) {
       yield Ref.fromString(ref);
     }

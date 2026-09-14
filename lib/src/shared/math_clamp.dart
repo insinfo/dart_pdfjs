@@ -7,3 +7,5 @@ import 'dart:math';
 num mathClamp(num v, num minLimit, num maxLimit) {
   return min(max(v, minLimit), maxLimit);
 }
+
+num MathClamp(num v, num minLimit, num maxLimit) => mathClamp(v, minLimit, maxLimit);

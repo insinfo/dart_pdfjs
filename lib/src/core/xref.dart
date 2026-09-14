@@ -68,6 +68,10 @@ class XRef {
   Dict? topDict;
   Dict? trailer;
   dynamic encrypt;
+  Ref? get encryptRef {
+    final raw = trailer?.getRaw('Encrypt');
+    return raw is Ref ? raw : null;
+  }
   Dict? root;
   XRefTableState? tableState;
   XRefStreamState? streamState;

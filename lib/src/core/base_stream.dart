@@ -16,6 +16,17 @@ abstract class BaseStream {
 
   bool get isDataLoaded => true;
 
+  int? width;
+  int? height;
+  int? numComps;
+  int? bitsPerComponent;
+  Map<String, int>? fallbackDims;
+  int drawWidth = 0;
+  int drawHeight = 0;
+  bool forceRGBA = false;
+  bool forceRGB = false;
+  BaseStream? stream;
+
   int getByte() => unreachable('Abstract method `getByte` called');
 
   Uint8List getBytes([int? length]) =>
