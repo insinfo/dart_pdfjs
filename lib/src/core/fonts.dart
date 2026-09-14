@@ -1376,6 +1376,8 @@ class Font {
     }
 
     cidEncoding = _get(properties, 'cidEncoding')?.toString() ?? '';
+    cidToGidMap = (_get(properties, 'cidToGidMap') as Map?)?.cast<int, int>() ??
+        <int, int>{};
     vertical = _get(properties, 'vertical') == true;
     if (vertical) {
       vmetrics = _get(properties, 'vmetrics');
@@ -1472,6 +1474,7 @@ class Font {
   BaseToUnicodeMap toUnicode = ToUnicodeMap();
   Map<int, dynamic> toFontChar = <int, dynamic>{};
   String cidEncoding = '';
+  Map<int, int> cidToGidMap = <int, int>{};
   bool vertical = false;
   dynamic vmetrics;
   dynamic defaultVMetrics;
@@ -1706,6 +1709,10 @@ class Font {
 
     var isInFont = toFontChar.containsKey(charcode);
     dynamic fontCharCode = toFontChar[charcode] ?? charcode;
+    if (composite && cidToGidMap.containsKey(widthCode)) {
+      fontCharCode = cidToGidMap[widthCode]!;
+      isInFont = fontCharCode != 0;
+    }
     if (missingFile) {
       final glyphName = _mapGet(differences, charcode) ??
           (charcode < defaultEncoding.length ? defaultEncoding[charcode] : '');

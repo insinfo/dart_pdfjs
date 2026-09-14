@@ -25,6 +25,8 @@ class CanvasExtraState {
   int textRenderingMode;
   double textRise;
   List<double> textMatrix;
+  dynamic fillPattern;
+  dynamic strokePattern;
   double textLineX;
   double textLineY;
   double x;
@@ -40,6 +42,8 @@ class CanvasExtraState {
     this.textRenderingMode = TextRenderingMode.fill,
     this.textRise = 0,
     List<double>? textMatrix,
+    this.fillPattern,
+    this.strokePattern,
     this.textLineX = 0,
     this.textLineY = 0,
     this.x = 0,
@@ -56,6 +60,8 @@ class CanvasExtraState {
         textRenderingMode: textRenderingMode,
         textRise: textRise,
         textMatrix: List<double>.from(textMatrix),
+        fillPattern: fillPattern,
+        strokePattern: strokePattern,
         textLineX: textLineX,
         textLineY: textLineY,
         x: x,
@@ -70,9 +76,10 @@ class _CanvasGroupState {
   final double offsetY;
   final double alpha;
   final String composite;
+  final dynamic softMask;
 
   const _CanvasGroupState(this.parent, this.canvas, this.offsetX, this.offsetY,
-      this.alpha, this.composite);
+      this.alpha, this.composite, this.softMask);
 }
 
 class _AnnotationState {
@@ -235,6 +242,15 @@ class CanvasGraphics {
         setStrokeCMYKColor(a[0], a[1], a[2], a[3]);
       case OPS.setFillCMYKColor:
         setFillCMYKColor(a[0], a[1], a[2], a[3]);
+      case OPS.setStrokeColorSpace:
+      case OPS.setFillColorSpace:
+        return;
+      case OPS.setStrokeColorN:
+        setStrokeColorN(a);
+      case OPS.setFillColorN:
+        setFillColorN(a);
+      case OPS.shadingFill:
+        shadingFill(a[0]);
       case OPS.setStrokeTransparent:
         ctx.strokeStyle = 'rgba(0,0,0,0)'.toJS;
       case OPS.setFillTransparent:
@@ -672,8 +688,8 @@ class CanvasGraphics {
     final composite = map['blendMode'] == null
         ? ctx.globalCompositeOperation
         : _blendMode(map['blendMode'].toString());
-    _groupStack.add(_CanvasGroupState(
-        ctx, scratch, x.toDouble(), y.toDouble(), alpha, composite));
+    _groupStack.add(_CanvasGroupState(ctx, scratch, x.toDouble(), y.toDouble(),
+        alpha, composite, map['smask']));
     ctx = scratchCtx;
     ctx.translate(-x.toDouble(), -y.toDouble());
     if (map['matrix'] is List) _transformList(map['matrix'] as List);
@@ -685,12 +701,142 @@ class CanvasGraphics {
   void endGroup(dynamic group) {
     if (_groupStack.isEmpty) return;
     final state = _groupStack.removeLast();
+    if (state.softMask != null) _applySoftMask(state.canvas, state.softMask);
     ctx = state.parent;
     ctx.save();
     ctx.resetTransform();
     ctx.globalAlpha = state.alpha;
     ctx.globalCompositeOperation = state.composite;
     ctx.drawImage(state.canvas, state.offsetX, state.offsetY);
+    ctx.restore();
+  }
+
+  void _applySoftMask(web.HTMLCanvasElement content, dynamic descriptor) {
+    final map = descriptor is Map ? descriptor : const <String, dynamic>{};
+    dynamic maskSource = map['canvas'] ?? map['bitmap'] ?? map['mask'];
+    maskSource = _resolveObject(maskSource);
+    if (maskSource is Map) maskSource = maskSource['bitmap'];
+    if (maskSource is! web.CanvasImageSource) return;
+    final maskCanvas =
+        web.document.createElement('canvas') as web.HTMLCanvasElement;
+    maskCanvas.width = content.width;
+    maskCanvas.height = content.height;
+    final maskCtx =
+        maskCanvas.getContext('2d') as web.CanvasRenderingContext2D?;
+    final contentCtx =
+        content.getContext('2d') as web.CanvasRenderingContext2D?;
+    if (maskCtx == null || contentCtx == null) return;
+    final backdrop = map['backdrop'] is Iterable
+        ? List<num>.from(map['backdrop'] as Iterable)
+        : null;
+    if (backdrop != null && backdrop.length >= 3) {
+      maskCtx.fillStyle = _rgb(backdrop[0], backdrop[1], backdrop[2]).toJS;
+      maskCtx.fillRect(0, 0, content.width, content.height);
+    }
+    maskCtx.drawImage(
+        maskSource, 0, 0, content.width.toDouble(), content.height.toDouble());
+    final maskData =
+        maskCtx.getImageData(0, 0, content.width, content.height).data.toDart;
+    final pixels = contentCtx.getImageData(0, 0, content.width, content.height);
+    final contentData = pixels.data.toDart;
+    final luminosity = map['subtype']?.toString() == 'Luminosity';
+    final transfer = map['transferMap'] is Iterable
+        ? List<int>.from(map['transferMap'] as Iterable)
+        : null;
+    for (var i = 0; i < contentData.length; i += 4) {
+      var value = luminosity
+          ? (maskData[i] * 0.3 +
+                  maskData[i + 1] * 0.59 +
+                  maskData[i + 2] * 0.11)
+              .round()
+          : maskData[i + 3];
+      if (transfer != null && transfer.isNotEmpty) {
+        value = transfer[value.clamp(0, transfer.length - 1)].clamp(0, 255);
+      }
+      contentData[i + 3] = (contentData[i + 3] * value / 255).round();
+    }
+    contentCtx.putImageData(pixels, 0, 0);
+  }
+
+  void setFillColorN(List<dynamic> args) {
+    final pattern = _patternFromArgs(args);
+    if (pattern == null) return;
+    current.fillPattern = pattern;
+    ctx.fillStyle = pattern;
+  }
+
+  void setStrokeColorN(List<dynamic> args) {
+    final pattern = _patternFromArgs(args);
+    if (pattern == null) return;
+    current.strokePattern = pattern;
+    ctx.strokeStyle = pattern;
+  }
+
+  dynamic _patternFromArgs(List<dynamic> args) {
+    if (args.isEmpty) return null;
+    dynamic ir = _resolveObject(args.last);
+    if (ir is Map && ir['IR'] != null) ir = ir['IR'];
+    if (ir is! List || ir.isEmpty) return null;
+    if (ir[0] == 'RadialAxial') return _gradientFromIR(ir);
+    if (ir[0] == 'TilingPattern') {
+      return _tilingPatternFromIR(ir, args.take(args.length - 1).toList());
+    }
+    return null;
+  }
+
+  dynamic _gradientFromIR(List<dynamic> ir) {
+    if (ir.length < 8) return null;
+    final p0 = List<num>.from(ir[4] as Iterable);
+    final p1 = List<num>.from(ir[5] as Iterable);
+    final web.CanvasGradient gradient;
+    if (ir[1] == 'radial') {
+      gradient = ctx.createRadialGradient(p0[0].toDouble(), p0[1].toDouble(),
+          _number(ir[6]), p1[0].toDouble(), p1[1].toDouble(), _number(ir[7]));
+    } else {
+      gradient = ctx.createLinearGradient(p0[0].toDouble(), p0[1].toDouble(),
+          p1[0].toDouble(), p1[1].toDouble());
+    }
+    for (final stop in ir[3] as Iterable) {
+      final values = List<dynamic>.from(stop as Iterable);
+      if (values.length >= 2) {
+        gradient.addColorStop(
+            _number(values[0]).clamp(0, 1), values[1].toString());
+      }
+    }
+    return gradient;
+  }
+
+  dynamic _tilingPatternFromIR(List<dynamic> ir, List<dynamic> baseColor) {
+    if (ir.length < 8) return null;
+    final bbox = List<num>.from(ir[4] as Iterable);
+    final width = _number(ir[5]).abs().ceil().clamp(1, 4096);
+    final height = _number(ir[6]).abs().ceil().clamp(1, 4096);
+    final tile = web.document.createElement('canvas') as web.HTMLCanvasElement;
+    tile.width = width;
+    tile.height = height;
+    final tileCtx = tile.getContext('2d') as web.CanvasRenderingContext2D?;
+    if (tileCtx == null) return null;
+    tileCtx.translate(-bbox[0].toDouble(), -bbox[1].toDouble());
+    final tileGraphics =
+        CanvasGraphics(tileCtx, commonObjs: commonObjs, objs: objs);
+    if (ir[1] == null && baseColor.length >= 3) {
+      tileGraphics.setFillRGBColor(baseColor[0], baseColor[1], baseColor[2]);
+      tileGraphics.setStrokeRGBColor(baseColor[0], baseColor[1], baseColor[2]);
+    }
+    if (ir[2] != null) tileGraphics.executeOperatorList(ir[2]);
+    return ctx.createPattern(tile, 'repeat');
+  }
+
+  void shadingFill(dynamic source) {
+    dynamic ir = _resolveObject(source);
+    if (ir is Map && ir['IR'] != null) ir = ir['IR'];
+    if (ir is! List) return;
+    final pattern = _patternFromArgs(<dynamic>[ir]);
+    if (pattern == null) return;
+    ctx.save();
+    ctx.fillStyle = pattern;
+    ctx.fillRect(-ctx.canvas.width.toDouble(), -ctx.canvas.height.toDouble(),
+        ctx.canvas.width * 3.0, ctx.canvas.height * 3.0);
     ctx.restore();
   }
 

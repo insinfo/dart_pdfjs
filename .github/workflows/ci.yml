@@ -51,6 +51,7 @@ jobs:
           test/display/touch_manager_test.dart
           test/display/canvas_test.dart
           test/display/canvas_advanced_test.dart
+          test/display/canvas_patterns_test.dart
           test/display/annotation_layer_test.dart
           test/display/api_browser_test.dart
           -p chrome

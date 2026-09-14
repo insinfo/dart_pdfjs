@@ -9,8 +9,10 @@ The project targets web applications and uses `package:web` with
 > common PDF image color spaces and masks are supported. The Canvas backend
 > includes isolated transparency groups and image masks, and a browser
 > annotation layer covers common links, markup, popups, and form widgets.
-> Advanced CID fonts, full soft masks, dedicated web workers, and range
-> streaming are still being expanded.
+> CID CMaps and vertical metrics, Alpha/Luminosity soft masks, axial/radial
+> shadings, tiling patterns, and application-provided progressive/range data
+> transports are supported. Dedicated browser-worker orchestration remains in
+> development.
 
 ## Render a PDF in the browser
 
@@ -43,6 +45,10 @@ Future<void> renderFirstPage(Uint8List pdfBytes) async {
 URLs can also be loaded directly in browser builds with
 `getDocument('https://example.com/document.pdf')`, subject to normal CORS
 rules.
+
+Applications with their own networking layer can subclass
+`PDFDataRangeTransport`, feed progressive/range bytes through its `onData*`
+methods, and consume them with `PDFDataTransportStream`.
 
 ## Requirements
 

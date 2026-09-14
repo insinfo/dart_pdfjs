@@ -62,6 +62,14 @@ All notable changes to this project will be documented in this file.
 - Local worker document protocol with setup/factory injection, recovery/XFA
   loading, page/catalog/document actions, operator/text streaming entrypoints,
   task tracking, cleanup, and idempotent termination.
+- CID font translation with embedded/Identity/application-supplied CMaps,
+  multibyte code spaces, `CIDToGIDMap`, `CIDSystemInfo`, horizontal `W`/`DW`
+  and vertical `W2`/`DW2` metrics.
+- Public `PDFDataRangeTransport` and asynchronous transport stream with queued
+  progressive events, headers/progress, exact range readers, cancellation,
+  abort, and initial-data accounting.
+- Canvas axial/radial shadings, tiling patterns, Pattern color operators, and
+  Alpha/Luminosity soft masks with backdrop and transfer-map support.
 
 ### Changed
 
@@ -72,7 +80,7 @@ All notable changes to this project will be documented in this file.
   response metadata, and network-backend selection.
 - Added the DOM text-layer rendering pipeline, including marked content,
   geometry, font layout, scaling, rotation updates, and cancellation.
-- Increased coverage to 922 VM tests and 90 Chrome tests.
+- Increased coverage to 973 VM tests and 101 Chrome tests.
 
 ## [1.0.0] - 2026-09-14
 

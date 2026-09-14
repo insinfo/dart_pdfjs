@@ -158,8 +158,9 @@ lib/src/
 O caminho `getDocument → getPage → OperatorList → CanvasGraphics` já renderiza
 PDFs no Canvas 2D do navegador, incluindo fontes simples traduzidas,
 Image XObjects/inline images, grupos de transparência, máscaras e uma camada
-visual de annotations/widgets. Permanecem em evolução fontes CID avançadas,
-soft masks completos, worker web dedicado e streaming por ranges.
+visual de annotations/widgets, CMaps CID, métricas verticais, patterns,
+shadings, soft masks e transporte progressivo/por ranges. Permanece em
+evolução a orquestração de worker web dedicado e recursos PDF mais raros.
 
 ### Fase 10 — Scripting API (18 arquivos) ⏳ Diferido
 
@@ -243,5 +244,5 @@ e limpa o cache local `.dart_tool/test` antes de cada execução.
 - **Fase 6 (`core/` renderização e documento):** `colorspace.dart` 100% completo; `pattern.dart` 100% completo; `writer.dart` 100% concluído; `pdf_manager.dart` 100% concluído; `operator_list.dart` 100% concluído; `image_resizer.dart` 100% concluído; `image.dart` (`PDFImage`) 100% concluído; `document.dart` (`Page`, `PDFDocument`) 100% concluído; `evaluator.dart` já gera listas funcionais para PDFs simples e `annotation.dart` permanece parcial.
 - **Fase 7 (`core/` utilitários centrais):** `bidi.dart`, `intersector.dart`, `image_utils.dart`, `chunked_stream.dart`, `function.dart`, `default_appearance.dart`, `evaluator_preprocessor.dart`, `internal_viewer_utils.dart`, `postscript/lexer.dart` 100% concluídos.
 - **Fase 9 (`display/`):** API pública, `CanvasGraphics`, grupos de transparência, máscaras e annotation layer funcional concluídos, além de factories DOM, objetos, imagens/texto XFA, transporte Fetch, seleção de backend e `text_layer.dart`; soft masks completos e recursos avançados permanecem em andamento.
-- **Testes Unitários:** **1.012 testes passando (922 VM + 90 Chrome, 100% sucesso)**.
+- **Testes Unitários:** **1.074 testes passando (973 VM + 101 Chrome, 100% sucesso)**.
 - **Análise Estática (`dart analyze`):** **0 issues**.

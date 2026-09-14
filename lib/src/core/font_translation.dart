@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import 'base_stream.dart';
+import 'cid_font_data.dart';
 import 'encodings.dart';
 import 'fonts.dart';
 import 'fonts_utils.dart';
@@ -146,8 +147,7 @@ class FontTranslator {
         : null;
     final descriptor = _dict(descendant?.get('FontDescriptor'));
     final subtype = _name(descendant?.get('Subtype')) ?? 'CIDFontType2';
-    final widths = _readCidWidths(descendant);
-    final defaultWidth = _num(descendant?.get('DW'), 1000);
+    final cid = readCidFontData(dict, descendant, options);
     final toUnicode = _readToUnicode(dict.get('ToUnicode'));
     final effectiveToUnicode =
         toUnicode.length > 0 ? toUnicode : IdentityToUnicodeMap(0, 0xffff);
@@ -158,8 +158,13 @@ class FontTranslator {
       'flags': _int(descriptor?.get('Flags'), FontFlags.Nonsymbolic),
       'toUnicode': effectiveToUnicode,
       'hasIncludedToUnicodeMap': toUnicode.length > 0,
-      'widths': widths,
-      'defaultWidth': defaultWidth,
+      'widths': cid.widths,
+      'defaultWidth': cid.defaultWidth,
+      'vmetrics': cid.vmetrics,
+      'defaultVMetrics': cid.defaultVMetrics,
+      'cidToGidMap': cid.cidToGidMap,
+      'cidSystemInfo': cid.cidSystemInfo,
+      'cMap': cid.cMap,
       'fontMatrix': const <double>[0.001, 0, 0, 0.001, 0, 0],
       'bbox': _numbers(descriptor?.getArray('FontBBox')) ??
           const <double>[0, 0, 0, 0],
@@ -169,8 +174,8 @@ class FontTranslator {
       'composite': true,
       // A full predefined CMap is handled by cmap.dart. Identity encodings are
       // sufficient for the simple rendering path and retain two-byte codes.
-      'cidEncoding': _name(dict.get('Encoding')) ?? 'Identity-H',
-      'vertical': (_name(dict.get('Encoding')) ?? '').endsWith('-V'),
+      'cidEncoding': cid.cidEncoding,
+      'vertical': cid.vertical,
     };
     final font = Font(baseFont, _fontFile(descriptor), properties, options);
     return TranslatedFont(
@@ -189,31 +194,6 @@ class FontTranslator {
     for (var i = 0; i < array.length && i < count; i++) {
       final value = array[i];
       if (value is num) result[firstChar + i] = value;
-    }
-    return result;
-  }
-
-  Map<int, num> _readCidWidths(Dict? dict) {
-    final result = <int, num>{};
-    final values = dict?.getArray('W');
-    if (values is! List) return result;
-    var i = 0;
-    while (i < values.length) {
-      final first = values[i++];
-      if (first is! num || i >= values.length) break;
-      final next = values[i++];
-      if (next is List) {
-        for (var j = 0; j < next.length; j++) {
-          if (next[j] is num) result[first.toInt() + j] = next[j] as num;
-        }
-      } else if (next is num && i < values.length && values[i] is num) {
-        final width = values[i++] as num;
-        for (var code = first.toInt(); code <= next.toInt(); code++) {
-          result[code] = width;
-        }
-      } else {
-        break;
-      }
     }
     return result;
   }

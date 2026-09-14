@@ -18,18 +18,18 @@ abstract class BasePDFStream {
   // ignore: unused_field
   final dynamic _source;
   dynamic get source => _source;
-  
+
   // ignore: prefer_typing_uninitialized_variables
   final _pdfStreamReaderFactory;
-  
+
   // ignore: prefer_typing_uninitialized_variables
   final _pdfStreamRangeReaderFactory;
 
   BasePDFStreamReader? _fullReader;
   final Set<BasePDFStreamRangeReader> _rangeReaders = {};
 
-  BasePDFStream(this._source, this._pdfStreamReaderFactory, this._pdfStreamRangeReaderFactory);
-
+  BasePDFStream(this._source, this._pdfStreamReaderFactory,
+      this._pdfStreamRangeReaderFactory);
 
   int get progressiveDataLength {
     return _fullReader?.loaded ?? 0;
@@ -37,7 +37,8 @@ abstract class BasePDFStream {
 
   /// Gets a reader for the entire PDF data.
   BasePDFStreamReader getFullReader() {
-    assert_(_fullReader == null, 'BasePDFStream.getFullReader can only be called once.');
+    assert_(_fullReader == null,
+        'BasePDFStream.getFullReader can only be called once.');
     _fullReader = _pdfStreamReaderFactory(this);
     return _fullReader!;
   }
@@ -78,12 +79,11 @@ abstract class BasePDFStreamReader {
   bool _isRangeSupported = false;
   bool _isStreamingSupported = false;
   int _loaded = 0;
-  
+
   final BasePDFStream _stream;
   BasePDFStream get stream => _stream;
 
   BasePDFStreamReader(this._stream);
-
 
   void setHeaders({
     int? contentLength,
@@ -91,7 +91,8 @@ abstract class BasePDFStreamReader {
     bool? isRangeSupported,
   }) {
     if (contentLength != null) _contentLength = contentLength;
-    if (isStreamingSupported != null) _isStreamingSupported = isStreamingSupported;
+    if (isStreamingSupported != null)
+      _isStreamingSupported = isStreamingSupported;
     if (isRangeSupported != null) _isRangeSupported = isRangeSupported;
     if (!_headersCapability.isCompleted) {
       _headersCapability.complete();
@@ -106,6 +107,17 @@ abstract class BasePDFStreamReader {
 
   void callOnProgress() {
     onProgress?.call(_loaded, _contentLength);
+  }
+
+  /// Updates byte accounting for concrete stream adapters.
+  void addLoadedBytes(int count) {
+    if (count < 0) throw RangeError.value(count, 'count');
+    _loaded += count;
+  }
+
+  /// Sets a filename discovered by a concrete transport.
+  void setFilename(String? value) {
+    _filename = value;
   }
 
   /// Gets a promise that is resolved when the headers and other metadata of
@@ -161,4 +173,3 @@ abstract class BasePDFStreamRangeReader {
     unreachable('Abstract method `cancel` called');
   }
 }
-
