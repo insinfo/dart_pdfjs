@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
 - Expanded the pure Dart PDF.js port across shared, core, XFA, and display
   modules.
 - Added lifecycle cleanup for bitmap resources held by `PDFObjects`.
+- Added HTTP fetch streaming, range requests, cancellation, progress reporting,
+  response metadata, and network-backend selection.
 - Increased coverage to 332 VM tests and 19 Chrome tests.
 
 ## [1.0.0] - 2026-09-14

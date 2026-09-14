@@ -45,4 +45,5 @@ jobs:
           test/display/svg_factory_test.dart
           test/display/binary_data_factory_test.dart
           test/display/text_layer_images_test.dart
+          test/display/fetch_stream_test.dart
           -p chrome

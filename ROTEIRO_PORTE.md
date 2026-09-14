@@ -236,6 +236,6 @@ e limpa o cache local `.dart_tool/test` antes de cada execução.
 - **Fase 5 (`core/` fontes e métricas):** ~95% concluída (`font_renderer.dart`, tabelas de fatores de fontes `calibri`, `helvetica`, `myriadpro`, `segoeui`, `liberationsans_widths`, `xfa_fonts.dart`).
 - **Fase 6 (`core/` renderização e documento):** `colorspace.dart` 100% completo; `pattern.dart` 100% completo; `writer.dart` 100% concluído; `pdf_manager.dart` 100% concluído; `operator_list.dart` 100% concluído; `image_resizer.dart` 100% concluído; `image.dart` (`PDFImage`) 100% concluído; `document.dart` (`Page`, `PDFDocument`) 100% concluído; `evaluator.dart` e `annotation.dart` iniciados.
 - **Fase 7 (`core/` utilitários centrais):** `bidi.dart`, `intersector.dart`, `image_utils.dart`, `chunked_stream.dart`, `function.dart`, `default_appearance.dart`, `evaluator_preprocessor.dart`, `internal_viewer_utils.dart`, `postscript/lexer.dart` 100% concluídos.
-- **Fase 9 (`display/`):** `display/obj_bin_transform_display.dart`, `display/canvas_factory.dart`, `display/svg_factory.dart`, `display/binary_data_factory.dart`, `display/text_layer_images.dart`, `display/xfa_text.dart` e `display/pdf_objects.dart` 100% concluídos.
-- **Testes Unitários:** **351 testes passando (332 VM + 19 Chrome, 100% sucesso)**.
+- **Fase 9 (`display/`):** factories DOM, objetos, imagens/texto XFA e transporte Fetch/seleção de backend concluídos; renderização principal permanece em andamento.
+- **Testes Unitários:** **355 testes passando (332 VM + 23 Chrome, 100% sucesso)**.
 - **Análise Estática (`dart analyze`):** **0 issues**.
