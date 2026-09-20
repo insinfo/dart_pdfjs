@@ -67,7 +67,7 @@ void main() {
     expect(web.document.activeElement, input);
   });
 
-  test('embedded initial prompt does not steal focus', () async {
+  test('embedded initial prompt relies on native dialog focus', () async {
     final outside =
         web.document.createElement('button') as web.HTMLButtonElement;
     web.document.body!.append(outside);
@@ -75,7 +75,11 @@ void main() {
     prompt = create(embedded: true);
     await prompt.setUpdateCallback((_) {}, PasswordResponses.needPassword);
     await prompt.open();
-    expect(web.document.activeElement, outside);
+    // `showModal` makes elements outside the dialog inert. PDF.js avoids an
+    // explicit focus call here, while Chromium still chooses the first
+    // focusable dialog child as part of its native modal-opening algorithm.
+    expect(dialog.open, isTrue);
+    expect(web.document.activeElement, input);
     outside.remove();
   });
 
