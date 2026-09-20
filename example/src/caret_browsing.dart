@@ -93,8 +93,11 @@ final class CaretBrowsingMode {
     if (selection == null || selection.rangeCount == 0) return;
     final focusNode = selection.focusNode;
     if (focusNode == null) return;
-    final focusElement =
-        focusNode is web.Element ? focusNode : focusNode.parentElement;
+    // Web extension types don't support reliable runtime `is` checks after
+    // JavaScript compilation. Inspect nodeType before calling Element APIs.
+    final focusElement = focusNode.nodeType == web.Node.ELEMENT_NODE
+        ? focusNode as web.Element
+        : focusNode.parentElement;
     final root = focusElement?.closest('.textLayer');
     if (focusElement == null || root == null) return;
     final walker = web.document.createTreeWalker(root, 4);

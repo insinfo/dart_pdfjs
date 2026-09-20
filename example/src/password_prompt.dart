@@ -29,7 +29,7 @@ class PasswordPrompt {
     );
     cancelButton.addEventListener(
       'click',
-      ((web.Event _) => unawaited(close())).toJS,
+      ((web.Event _) => _cancel()).toJS,
     );
     input.addEventListener(
       'keydown',
@@ -60,6 +60,7 @@ class PasswordPrompt {
     await _activeCompleter?.future;
     final activeCompleter = Completer<void>();
     _activeCompleter = activeCompleter;
+    final previouslyFocused = web.document.activeElement;
     try {
       await overlayManager.open(dialog);
     } catch (_) {
@@ -68,7 +69,13 @@ class PasswordPrompt {
     }
 
     final incorrect = _reason == PasswordResponses.incorrectPassword;
-    if (!_isViewerEmbedded || incorrect) input.focus();
+    if (!_isViewerEmbedded || incorrect) {
+      input.focus();
+    } else if (previouslyFocused != null) {
+      // showModal focuses the first focusable descendant automatically in
+      // Chromium. Embedded viewers must preserve the host document's focus.
+      (previouslyFocused as web.HTMLElement).focus();
+    }
     label.setAttribute(
       'data-l10n-id',
       incorrect ? 'pdfjs-password-invalid' : 'pdfjs-password-label',
