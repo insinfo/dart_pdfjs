@@ -219,6 +219,13 @@ Infraestrutura já portada para `example/src/`, com testes de navegador:
   lifecycle, cancelamento, acessibilidade, links inferidos e seleção textual.
 - `base_download_manager.dart` e `download_manager.dart`: Blob URLs, abertura
   de PDFs, downloads DOM e fallback seguro.
+- `pdf_thumbnail_view.dart`: renderização e lifecycle de thumbnails, seleção,
+  rotação, pausa/retomada e conversão Canvas → imagem.
+- `pdf_document_properties.dart`, `password_prompt.dart` e
+  `editor_undo_bar.dart`: propriedades/metadados, autenticação e desfazer de
+  edições.
+- `text_highlighter.dart`, `text_accessibility.dart` e `caret_browsing.dart`:
+  realce de busca, ordenação/ARIA e navegação de cursor entre páginas.
 
 ---
 

@@ -45,7 +45,7 @@ final class FakeLayerPage implements LayerPage {
       pendingXfa?.future ?? Future.value(xfa);
 }
 
-final class RecordingHighlighter implements TextHighlighter {
+final class RecordingHighlighter implements TextHighlighterController {
   int enabled = 0;
   int disabled = 0;
   List<String> strings = [];
@@ -55,8 +55,7 @@ final class RecordingHighlighter implements TextHighlighter {
   @override
   void enable() => enabled++;
   @override
-  void setTextMapping(
-      List<web.HTMLElement> textDivs, List<String> textContentItems) {
+  void setTextMapping(List<web.Node> textDivs, List<String> textContentItems) {
     strings = List.of(textContentItems);
   }
 }

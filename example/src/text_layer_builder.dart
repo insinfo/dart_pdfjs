@@ -12,16 +12,16 @@ import 'package:web/web.dart' as web;
 import 'layer_page_adapter.dart';
 import 'ui_utils.dart';
 
-abstract interface class TextHighlighter {
+abstract interface class TextHighlighterController {
   void setTextMapping(
-    List<web.HTMLElement> textDivs,
+    List<web.Node> textDivs,
     List<String> textContentItems,
   );
   void enable();
   void disable();
 }
 
-abstract interface class TextAccessibilityManager {
+abstract interface class TextAccessibilityController {
   void setTextMapping(List<web.HTMLElement> textDivs);
   void enable();
   void disable();
@@ -46,8 +46,8 @@ final class TextLayerBuilder {
   }
 
   final LayerPage pdfPage;
-  final TextHighlighter? highlighter;
-  final TextAccessibilityManager? accessibilityManager;
+  final TextHighlighterController? highlighter;
+  final TextAccessibilityController? accessibilityManager;
   final bool enablePermissions;
   final TextLayerAppended? onAppend;
   final web.AbortSignal? abortSignal;
