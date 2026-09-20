@@ -153,8 +153,10 @@ lib/src/
 
 ### Fase 8 — Core XFA (27 arquivos) 🔄 Em andamento
 
-Fundação concluída: `core/xfa/symbol_utils.dart` e `core/xfa/utils.dart`, com
-testes unitários portados. Os parsers, objetos e layout XFA continuam
+Fundação concluída: `core/xfa/symbol_utils.dart`, `core/xfa/utils.dart` e
+`core/xfa/formcalc_lexer.dart`, com testes unitários portados. O lexer cobre
+tokens, operadores, comentários, literais e identificadores Unicode da
+linguagem FormCalc. Os demais parsers, objetos e layout XFA continuam
 pendentes.
 
 ### Fase 9 — Display (~35 arquivos) 🟡
@@ -233,6 +235,11 @@ Infraestrutura já portada para `example/src/`, com testes de navegador:
 - `pdf_page_detail_view.dart`, `annotation_editor_layer_builder.dart` e
   `autolinker.dart`: renderização detalhada, camada de edição e detecção de
   URLs/e-mails com mapeamento para coordenadas PDF.
+- `annotation_editor_params.dart`: sincronização dos controles de texto livre,
+  tinta, destaque, carimbo e assinatura, telemetria e descarte explícito de
+  listeners DOM/EventBus.
+- `pdf_viewer_navigation.dart`: cache LRU de páginas com liberação explícita de
+  recursos, estado/rótulos de página e avanço correto nos modos wrapped/spread.
 
 ---
 
@@ -242,7 +249,11 @@ Infraestrutura já portada para `example/src/`, com testes de navegador:
 
 Use `./tool/run_tests.ps1` no lugar de executar `dart test` diretamente. O
 script remove os artefatos `dart_test.kernel.*` de `%TEMP%` no bloco `finally`
-e limpa o cache local `.dart_tool/test` antes de cada execução.
+e limpa o cache local `.dart_tool/test` antes de cada execução. O runner também
+rastreia e encerra seus processos filhos (Chrome, compiladores e workers) no
+`finally`, inclusive após timeout, para evitar processos órfãos em máquinas com
+poucos recursos. O limite padrão é 15 minutos e pode ser ajustado definindo
+`PDFJS_TEST_TIMEOUT_MINUTES` como um inteiro positivo.
 
 ```powershell
 # Suíte Dart/VM

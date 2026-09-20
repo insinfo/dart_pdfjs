@@ -67,7 +67,10 @@ dart analyze
 
 Always use the project test runner instead of invoking `dart test` directly.
 It removes the large `dart_test.kernel.*` directories left in the system temp
-folder after every run and clears `.dart_tool/test` before the next run.
+folder after every run, clears `.dart_tool/test` before the next run, and on
+Windows terminates browser/compiler descendants left by that invocation. Runs
+time out after 15 minutes by default; set `PDFJS_TEST_TIMEOUT_MINUTES` to a
+smaller positive value on resource-constrained machines.
 
 ```powershell
 # VM suite
