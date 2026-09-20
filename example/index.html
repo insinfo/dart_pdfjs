@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PDF.js para Dart</title>
+    <link rel="stylesheet" href="viewer.css">
+    <script defer src="main.dart.js"></script>
+  </head>
+  <body>
+    <header id="toolbar">
+      <form id="open-form">
+        <input id="url" aria-label="URL do PDF" value="../referencia/pdf.js-master/web/compressed.tracemonkey-pldi-09.pdf">
+        <button type="submit">Abrir</button>
+      </form>
+      <span class="separator"></span>
+      <button id="previous" type="button" title="Página anterior">‹</button>
+      <label><input id="page-number" type="number" min="1" value="1"> / <span id="page-count">0</span></label>
+      <button id="next" type="button" title="Próxima página">›</button>
+      <span class="separator"></span>
+      <button id="zoom-out" type="button" title="Reduzir">−</button>
+      <output id="zoom-value">100%</output>
+      <button id="zoom-in" type="button" title="Ampliar">+</button>
+      <button id="rotate" type="button" title="Girar no sentido horário">↻</button>
+    </header>
+    <main id="viewer-container">
+      <div id="status" role="status">Carregando…</div>
+      <div id="page" class="page"><canvas id="pdf-canvas"></canvas></div>
+    </main>
+  </body>
+</html>

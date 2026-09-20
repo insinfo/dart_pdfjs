@@ -151,7 +151,11 @@ lib/src/
 | 12 | `core/postscript/lexer.js` | `core/postscript/lexer.dart` | ✅ |
 | 13-16 | Restante | `core/*.dart` | 🟡 |
 
-### Fase 8 — Core XFA (27 arquivos) ⏳ Diferido
+### Fase 8 — Core XFA (27 arquivos) 🔄 Em andamento
+
+Fundação concluída: `core/xfa/symbol_utils.dart` e `core/xfa/utils.dart`, com
+testes unitários portados. Os parsers, objetos e layout XFA continuam
+pendentes.
 
 ### Fase 9 — Display (~35 arquivos) 🟡
 
@@ -162,9 +166,59 @@ visual de annotations/widgets, CMaps CID, métricas verticais, patterns,
 shadings, soft masks e transporte progressivo/por ranges. Permanece em
 evolução a orquestração de worker web dedicado e recursos PDF mais raros.
 
-### Fase 10 — Scripting API (18 arquivos) ⏳ Diferido
+### Fase 10 — Scripting API (18 arquivos) 🔄 Em andamento
+
+Concluídos `scripting_api/constants.dart`, `app_utils.dart`, `pdf_object.dart`
+e `color.dart`, incluindo testes unitários baseados na suíte upstream.
 
 ### Fase 11 — Pontos de Entrada (barrel exports)
+
+### Fase 12 — Viewer (`web/` → `example/`) 🔄 Em andamento
+
+Base navegável disponível em `example/`: carregamento por URL, progresso,
+navegação de páginas, zoom, rotação e renderização Canvas. Os controladores,
+camadas de texto/anotações, busca, miniaturas, impressão, histórico e demais
+módulos do viewer upstream serão portados incrementalmente.
+
+Infraestrutura já portada para `example/src/`, com testes de navegador:
+
+- `ui_utils.dart`: constantes, enums, geometria/visibilidade, scroll, zoom,
+  utilidades de consulta e barra de progresso.
+- `event_utils.dart`: `EventBus`, listeners descartáveis, timeout, sinais de
+  aborto e integração com eventos DOM.
+- `renderable_view.dart`, `pdf_rendering_queue.dart` e
+  `base_pdf_page_view.dart`: ciclo de renderização, prioridade, pausa/retomada,
+  pré-renderização e lifecycle de canvas.
+- `overlay_manager.dart`: registro e coordenação de diálogos modais.
+- `pdf_find_utils.dart` e `pdf_find_controller.dart`: normalização Unicode,
+  busca por palavra/frase, diacríticos, CJK/Hangul, navegação e eventos.
+- `pdf_link_service.dart`: destinos nomeados/explícitos, hashes, zoom, ações,
+  histórico, optional content e sanitização de links.
+- `app_options.dart`, `preferences.dart` e `view_history.dart`: conjunto
+  completo de opções do viewer, preferências e persistência de posição.
+- `l10n.dart`: facade tipada para backends de localização, direção RTL e
+  normalização de códigos de idioma.
+- `pdf_text_extractor.dart`: extração completa de texto com cache temporário e
+  integração ao ciclo de vida das páginas.
+- `pdf_history.dart`: histórico do navegador, restauração de destinos,
+  posições temporárias, `popstate`, `pagehide` e bloqueio de `hashchange`.
+- `grab_to_pan.dart` e `pdf_cursor_tools.dart`: navegação por arraste, modos de
+  cursor e bloqueios durante apresentação/edição.
+- `pdf_find_bar.dart`: UI de busca, teclado, preferências e mensagens
+  localizadas de resultado.
+- `base_tree_viewer.dart`, `pdf_outline_viewer.dart` e
+  `pdf_attachment_viewer.dart`: árvores laterais, outline sincronizado e
+  anexos incorporados/anotações.
+- `external_services.dart` e `generic_signature_storage.dart`: contratos do
+  host e persistência de assinaturas reutilizáveis.
+- `toolbar.dart`, `secondary_toolbar.dart` e `sidebar.dart`: controles
+  principais/secundários, estados ARIA e redimensionamento do painel lateral.
+- `pdf_presentation_mode.dart`: fullscreen, navegação por mouse/roda/toque,
+  restauração de estado e cleanup.
+- builders de annotation, text, struct tree, XFA e draw layers, incluindo
+  lifecycle, cancelamento, acessibilidade, links inferidos e seleção textual.
+- `base_download_manager.dart` e `download_manager.dart`: Blob URLs, abertura
+  de PDFs, downloads DOM e fallback seguro.
 
 ---
 
