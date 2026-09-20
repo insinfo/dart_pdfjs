@@ -34,6 +34,9 @@ abstract class BaseTreeViewer {
   final EventBus eventBus;
   final L10n _l10n;
 
+  /// Localization service exposed to specialized tree viewers.
+  L10n get l10n => _l10n;
+
   Object? pdfDocument;
   bool lastToggleIsShow = true;
   web.HTMLDivElement? currentTreeItem;

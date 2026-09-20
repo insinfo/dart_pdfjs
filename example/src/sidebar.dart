@@ -84,6 +84,12 @@ class Sidebar {
   set width(double value) => sidebar.style.width = '${value}px';
   bool get isOpen => _isOpen;
 
+  /// Updates open state for specialized sidebar controllers.
+  void setOpenState(bool value) {
+    _isOpen = value;
+    sidebar.hidden = (!value).toJS;
+  }
+
   void onStartResizing() {}
   void onStopResizing() {}
   void onResizing(double newWidth) {}

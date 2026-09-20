@@ -226,6 +226,13 @@ Infraestrutura já portada para `example/src/`, com testes de navegador:
   edições.
 - `text_highlighter.dart`, `text_accessibility.dart` e `caret_browsing.dart`:
   realce de busca, ordenação/ARIA e navegação de cursor entre páginas.
+- `menu.dart` e `pdf_thumbnail_viewer.dart`: menus acessíveis, virtualização,
+  prioridade, navegação, seleção, drag/drop e reordenação de páginas.
+- `pdf_layer_viewer.dart` e `views_manager.dart`: árvore de optional content,
+  alternância de painéis, eventos e lifecycle do sidebar.
+- `pdf_page_detail_view.dart`, `annotation_editor_layer_builder.dart` e
+  `autolinker.dart`: renderização detalhada, camada de edição e detecção de
+  URLs/e-mails com mapeamento para coordenadas PDF.
 
 ---
 
