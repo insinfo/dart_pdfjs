@@ -282,7 +282,7 @@ void main() {
         ..append(nested)
         ..append(web.document.createTextNode('ghi'));
       final position = Autolinker.textPosition(paragraph, 5);
-      expect(position.$1.data, 'def');
+      expect(position.$1.textContent, 'def');
       expect(position.$2, 2);
       expect(() => Autolinker.textPosition(paragraph, 20), throwsRangeError);
     });

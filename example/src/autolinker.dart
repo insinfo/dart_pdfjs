@@ -134,9 +134,12 @@ abstract final class Autolinker {
     web.Node current = container;
     var remaining = offset;
     while (true) {
-      if (current is web.Text) {
-        final length = (current.textContent ?? '').length;
-        if (remaining <= length) return (current, remaining);
+      // package:web DOM classes are JS extension types; an `is web.Text`
+      // check is not a reliable node-kind discriminator after dart2js.
+      if (current.nodeType == 3) {
+        final text = current as web.Text;
+        final length = (text.textContent ?? '').length;
+        if (remaining <= length) return (text, remaining);
         remaining -= length;
       } else if (current.firstChild != null) {
         current = current.firstChild!;

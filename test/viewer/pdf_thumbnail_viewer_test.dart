@@ -314,6 +314,94 @@ void main() {
     expect(viewer.getStructuralChanges(), ['mapping']);
   });
 
+  test(
+      'dragging multiple selected thumbnails preserves current page and mapping',
+      () async {
+    final document = await load();
+    final first = viewer.getThumbnail(0)!;
+    final second = viewer.getThumbnail(1)!;
+    final third = viewer.getThumbnail(2)!;
+    final fourth = viewer.getThumbnail(3)!;
+    for (final thumbnail in [first, second, third, fourth]) {
+      thumbnail.div.style
+        ..display = 'block'
+        ..width = '126px'
+        ..height = '168px';
+      thumbnail.imageContainer.style
+        ..display = 'block'
+        ..width = '126px'
+        ..height = '168px';
+    }
+    viewer
+      ..selectPage(2, true)
+      ..selectPage(3, true)
+      ..scrollThumbnailIntoView(4);
+    expect(viewer.currentPageNumber, 4);
+
+    final edited = <Map>[];
+    bus.on('pagesedited', (data) => edited.add(data as Map));
+    final startRect = second.imageContainer.getBoundingClientRect();
+    final endRect = fourth.div.getBoundingClientRect();
+    second.imageContainer.dispatchEvent(web.PointerEvent(
+      'pointerdown',
+      web.PointerEventInit(
+        pointerId: 17,
+        button: 0,
+        clientX: (startRect.left + 10).round(),
+        clientY: (startRect.top + 10).round(),
+        bubbles: true,
+        cancelable: true,
+      ),
+    ));
+    container.dispatchEvent(web.PointerEvent(
+      'pointermove',
+      web.PointerEventInit(
+        pointerId: 17,
+        clientX: (endRect.left + endRect.width / 2).round(),
+        clientY: (endRect.bottom + 10).round(),
+        bubbles: true,
+        cancelable: true,
+      ),
+    ));
+    web.window.dispatchEvent(web.PointerEvent(
+      'pointerup',
+      web.PointerEventInit(
+        pointerId: 17,
+        button: 0,
+        clientX: (endRect.left + endRect.width / 2).round(),
+        clientY: (endRect.bottom + 10).round(),
+        bubbles: true,
+        cancelable: true,
+      ),
+    ));
+
+    expect(document.pagesMapper!.moves, hasLength(1));
+    expect(document.pagesMapper!.moves.single.$1, [2, 3]);
+    expect(document.pagesMapper!.moves.single.$2, 4);
+    expect(viewer.getThumbnail(0), same(first));
+    expect(viewer.getThumbnail(1), same(fourth));
+    expect(viewer.getThumbnail(2), same(second));
+    expect(viewer.getThumbnail(3), same(third));
+    expect([
+      for (var index = 0; index < viewer.thumbnailsCount; index++)
+        viewer.getThumbnail(index)!.id,
+    ], [
+      1,
+      2,
+      3,
+      4
+    ]);
+    expect(viewer.selectedPages, isEmpty);
+    expect(second.checkbox!.checked, isFalse);
+    expect(third.checkbox!.checked, isFalse);
+    expect(viewer.currentPageNumber, 2);
+    expect(fourth.imageContainer.getAttribute('aria-current'), 'page');
+    expect(edited, hasLength(1));
+    expect(edited.single['pageNumbers'], [2, 3]);
+    expect(edited.single['insertAfter'], 4);
+    expect(edited.single['type'], 'move');
+  });
+
   test('cleanup resets unfinished thumbnails only', () async {
     await load(2);
     viewer.getThumbnail(0)!.renderingState = RenderingState.finished;

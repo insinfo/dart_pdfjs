@@ -619,24 +619,54 @@ final class PDFThumbnailViewer implements PDFThumbnailRenderingTarget {
     final dragged = _draggedThumbnail;
     final insertion = _dropIndex;
     if (drop && dragged != null && insertion != null) {
-      var target = insertion;
       final old = _thumbnails.indexOf(dragged);
-      if (target > old) target--;
-      if (target != old) {
-        _thumbnails.removeAt(old);
-        _thumbnails.insert(target, dragged);
+      final draggedPage = old + 1;
+      final pagesToMove =
+          (<int>{..._selectedPages, draggedPage}.toList()..sort());
+      final moved =
+          pagesToMove.map((pageNumber) => _thumbnails[pageNumber - 1]).toList();
+      final reordered = List<PDFThumbnailView>.of(_thumbnails)
+        ..removeWhere(moved.contains);
+      final removedBeforeInsertion =
+          pagesToMove.where((pageNumber) => pageNumber <= insertion).length;
+      final target = math.max(
+        0,
+        math.min(reordered.length, insertion - removedBeforeInsertion),
+      );
+      reordered.insertAll(target, moved);
+
+      var changed = false;
+      for (var index = 0; index < reordered.length; index++) {
+        if (!identical(reordered[index], _thumbnails[index])) {
+          changed = true;
+          break;
+        }
+      }
+      if (changed) {
+        final currentThumbnail = getThumbnail(_currentPageNumber - 1);
+        _thumbnails
+          ..clear()
+          ..addAll(reordered);
         for (var index = 0; index < _thumbnails.length; index++) {
           _thumbnails[index].updateId(index + 1);
           container.append(_thumbnails[index].div);
         }
-        _pagesMapper?.movePages([old + 1], target);
+        if (currentThumbnail != null) {
+          _currentPageNumber = _thumbnails.indexOf(currentThumbnail) + 1;
+        }
+        _pagesMapper?.movePages(pagesToMove, insertion);
         eventBus.dispatch('pagesedited', {
           'source': this,
           'pagesMapper': _pagesMapper,
-          'pageNumbers': [old + 1],
-          'insertAfter': target,
+          'pageNumbers': pagesToMove,
+          'insertAfter': insertion,
           'type': 'move',
         });
+        for (final thumbnail in moved) {
+          thumbnail.toggleSelected(false);
+        }
+        _selectedPages.clear();
+        _updateMenuEntries();
       }
     }
     dragged?.div.classList.remove('dragging');

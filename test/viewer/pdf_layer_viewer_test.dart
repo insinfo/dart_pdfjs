@@ -66,7 +66,8 @@ void main() {
     expect(container.querySelectorAll('.treeItem').length, 5);
     expect(container.querySelectorAll('input[type=checkbox]').length, 3);
     expect(container.classList.contains('withNesting'), isTrue);
-    expect(container.textContent, contains('Layer  Two'));
+    // PDF.js removes NUL characters rather than replacing them with spaces.
+    expect(container.textContent, contains('Layer Two'));
     expect(container.querySelector('[data-l10n-id="pdfjs-additional-layers"]'),
         isNotNull);
   });
@@ -128,11 +129,15 @@ void main() {
   test('togglelayerstree expands and collapses nested entries', () {
     viewer.render(
         optionalContentConfig: document.config, pdfDocument: document);
-    eventBus.dispatch('togglelayerstree');
+    // The unnamed "additional layers" branch starts collapsed, hence the
+    // first global toggle expands every branch.
     expect(
         container.querySelectorAll('.treeItemsHidden').length, greaterThan(0));
     eventBus.dispatch('togglelayerstree');
     expect(container.querySelectorAll('.treeItemsHidden').length, 0);
+    eventBus.dispatch('togglelayerstree');
+    expect(
+        container.querySelectorAll('.treeItemsHidden').length, greaterThan(0));
   });
 }
 
