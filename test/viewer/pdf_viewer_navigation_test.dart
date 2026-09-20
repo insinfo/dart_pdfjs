@@ -171,7 +171,20 @@ void main() {
         ),
       ];
       expect(navigation.previousPage(), isTrue);
-      expect(navigation.currentPageNumber, 1);
+      // Page 3 is the left-hand page in an odd spread, hence it moves by one.
+      expect(navigation.currentPageNumber, 2);
+
+      navigation.currentPageNumber = 4;
+      visible = const [
+        NavigationVisiblePage(
+          id: 3,
+          y: 0,
+          percent: 75,
+          widthPercent: 100,
+        ),
+      ];
+      expect(navigation.previousPage(), isTrue);
+      expect(navigation.currentPageNumber, 2);
     });
 
     test('wrapped mode advances across a complete visible row', () {
